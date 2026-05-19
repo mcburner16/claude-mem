@@ -103,4 +103,5 @@ export interface StrategyJson {
   offer: string;
   priceUsd: number;
   rationale: string;
+  stripePaymentLink?: string;
 }

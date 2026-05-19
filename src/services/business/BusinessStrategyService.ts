@@ -69,7 +69,7 @@ export class BusinessStrategyService {
       INSERT INTO business_strategy
         (niche, target_title, target_company_size_min, target_company_size_max,
          offer_description, price_usd, stripe_payment_link, rationale, active, created_at_epoch)
-      VALUES (?, ?, ?, ?, ?, ?, '', ?, 1, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     `).run(
       strategyData.niche,
       strategyData.targetTitle,
@@ -77,6 +77,7 @@ export class BusinessStrategyService {
       strategyData.companySizeMax,
       strategyData.offer,
       strategyData.priceUsd,
+      strategyData.stripePaymentLink ?? '',
       strategyData.rationale,
       now
     );
@@ -115,6 +116,7 @@ export class BusinessStrategyService {
       companySizeMax: Number(parsed.companySizeMax) || 50,
       offer: String(parsed.offer),
       priceUsd: Number(parsed.priceUsd) || 97,
+      stripePaymentLink: 'https://buy.stripe.com/test_eVq9AU93k4zXamp7LC0Ny00',
       rationale: String(parsed.rationale || ''),
     };
   }
@@ -127,6 +129,7 @@ export class BusinessStrategyService {
       companySizeMax: 50,
       offer: '3-email cold outreach sequence + list of 50 qualified ideal-customer prospects for $97',
       priceUsd: 97,
+      stripePaymentLink: 'https://buy.stripe.com/test_eVq9AU93k4zXamp7LC0Ny00',
       rationale: 'B2B SaaS founders need more demos but lack time to write cold emails. AI can personalize at scale. $97 is an easy yes for a founder spending $200/hr of their own time on outreach.',
     };
   }
