@@ -1,0 +1,18 @@
+{
+  "name": "claude-mem business agent",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "forwardPorts": [37777],
+  "portsAttributes": {
+    "37777": {
+      "label": "Business Agent API",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-vscode.vscode-typescript-next"]
+    }
+  }
+}
