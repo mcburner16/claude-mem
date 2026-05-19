@@ -25,7 +25,7 @@ const overrideCount = countArg !== -1 ? parseInt(args[countArg + 1]) : null;
 
 async function main(): Promise<void> {
   try {
-    const config = loadConfig();
+    const config = loadConfig(isDryRun);
 
     if (overrideCount !== null && !isNaN(overrideCount)) {
       config.pdfsPerDay = overrideCount;

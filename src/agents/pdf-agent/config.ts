@@ -10,21 +10,20 @@ export interface PdfAgentConfig {
   priceUsd: number;
 }
 
-export function loadConfig(): PdfAgentConfig {
-  const required = [
-    "ANTHROPIC_API_KEY",
-    "ETSY_API_KEY",
-    "ETSY_API_SECRET",
-    "ETSY_ACCESS_TOKEN",
-    "ETSY_SHOP_ID",
-  ];
+export function loadConfig(dryRun = false): PdfAgentConfig {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error("Missing required env var: ANTHROPIC_API_KEY");
+  }
 
-  for (const key of required) {
-    if (!process.env[key]) {
-      throw new Error(
-        `Missing required env var: ${key}\n` +
-          "See src/agents/pdf-agent/README.md for setup instructions."
-      );
+  if (!dryRun) {
+    const etsyRequired = ["ETSY_API_KEY", "ETSY_API_SECRET", "ETSY_ACCESS_TOKEN", "ETSY_SHOP_ID"];
+    for (const key of etsyRequired) {
+      if (!process.env[key]) {
+        throw new Error(
+          `Missing required env var: ${key}\n` +
+            "Etsy credentials are required unless running with --dry-run"
+        );
+      }
     }
   }
 
