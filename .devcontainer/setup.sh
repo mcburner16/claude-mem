@@ -13,7 +13,7 @@ echo "=== Installing Claude Code CLI ==="
 npm install -g @anthropic-ai/claude-code
 
 echo "=== Building claude-mem ==="
-npm run build
+bun run build
 
 echo "=== Setup complete ==="
-echo "Run: bash .devcontainer/start.sh"
+echo "Run: bun plugin/scripts/worker-service.cjs --daemon"
