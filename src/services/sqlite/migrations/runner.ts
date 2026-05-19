@@ -37,6 +37,7 @@ export class MigrationRunner {
     this.addSessionCustomTitleColumn();
     this.createObservationFeedbackTable();
     this.addSessionPlatformSourceColumn();
+    this.addBusinessTables();
   }
 
   /**
@@ -921,5 +922,103 @@ export class MigrationRunner {
     }
 
     this.db.prepare('INSERT OR IGNORE INTO schema_versions (version, applied_at) VALUES (?, ?)').run(25, new Date().toISOString());
+  }
+
+  private addBusinessTables(): void {
+    const applied = this.db.prepare('SELECT version FROM schema_versions WHERE version = ?').get(100) as SchemaVersion | undefined;
+    if (applied) return;
+
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS business_strategy (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        niche TEXT NOT NULL,
+        target_title TEXT NOT NULL,
+        target_company_size_min INTEGER NOT NULL DEFAULT 5,
+        target_company_size_max INTEGER NOT NULL DEFAULT 50,
+        offer_description TEXT NOT NULL,
+        price_usd INTEGER NOT NULL DEFAULT 97,
+        stripe_payment_link TEXT NOT NULL DEFAULT '',
+        rationale TEXT,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_at_epoch INTEGER NOT NULL
+      )
+    `);
+
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS prospects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        apollo_id TEXT UNIQUE,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        email TEXT,
+        title TEXT NOT NULL,
+        company TEXT NOT NULL,
+        company_domain TEXT,
+        employee_count INTEGER,
+        industry TEXT,
+        linkedin_url TEXT,
+        stage TEXT NOT NULL DEFAULT 'found',
+        found_at_epoch INTEGER NOT NULL,
+        last_contacted_epoch INTEGER,
+        follow_up_count INTEGER NOT NULL DEFAULT 0,
+        notes TEXT,
+        created_at_epoch INTEGER NOT NULL,
+        updated_at_epoch INTEGER NOT NULL
+      )
+    `);
+    this.db.run('CREATE INDEX IF NOT EXISTS idx_prospects_stage ON prospects(stage)');
+    this.db.run('CREATE INDEX IF NOT EXISTS idx_prospects_email ON prospects(email)');
+
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS deals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        prospect_id INTEGER NOT NULL,
+        stage TEXT NOT NULL DEFAULT 'awaiting_payment',
+        amount_usd INTEGER NOT NULL DEFAULT 97,
+        stripe_payment_link TEXT,
+        payment_reference TEXT,
+        gmail_thread_id TEXT,
+        paid_at_epoch INTEGER,
+        created_at_epoch INTEGER NOT NULL,
+        updated_at_epoch INTEGER NOT NULL,
+        FOREIGN KEY (prospect_id) REFERENCES prospects(id) ON DELETE CASCADE
+      )
+    `);
+    this.db.run('CREATE INDEX IF NOT EXISTS idx_deals_stage ON deals(stage)');
+    this.db.run('CREATE INDEX IF NOT EXISTS idx_deals_prospect ON deals(prospect_id)');
+
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS deliverables (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        deal_id INTEGER NOT NULL,
+        prospect_id INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        content TEXT,
+        canva_design_id TEXT,
+        gmail_draft_id TEXT,
+        created_at_epoch INTEGER NOT NULL,
+        completed_at_epoch INTEGER,
+        FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE CASCADE,
+        FOREIGN KEY (prospect_id) REFERENCES prospects(id) ON DELETE CASCADE
+      )
+    `);
+    this.db.run('CREATE INDEX IF NOT EXISTS idx_deliverables_deal ON deliverables(deal_id)');
+    this.db.run('CREATE INDEX IF NOT EXISTS idx_deliverables_status ON deliverables(status)');
+
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS business_loop_runs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_at_epoch INTEGER NOT NULL,
+        prospects_found INTEGER NOT NULL DEFAULT 0,
+        emails_drafted INTEGER NOT NULL DEFAULT 0,
+        deliverables_generated INTEGER NOT NULL DEFAULT 0,
+        errors TEXT,
+        duration_ms INTEGER
+      )
+    `);
+
+    this.db.prepare('INSERT OR IGNORE INTO schema_versions (version, applied_at) VALUES (?, ?)').run(100, new Date().toISOString());
+    logger.debug('DB', 'Created business tables (migration 100)');
   }
 }

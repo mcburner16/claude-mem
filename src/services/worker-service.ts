@@ -96,6 +96,8 @@ import { SettingsRoutes } from './worker/http/routes/SettingsRoutes.js';
 import { LogsRoutes } from './worker/http/routes/LogsRoutes.js';
 import { MemoryRoutes } from './worker/http/routes/MemoryRoutes.js';
 import { CorpusRoutes } from './worker/http/routes/CorpusRoutes.js';
+import { BusinessRoutes } from './worker/http/routes/BusinessRoutes.js';
+import { BusinessLoop } from './business/BusinessLoop.js';
 
 // Knowledge agent services
 import { CorpusStore } from './worker/knowledge/CorpusStore.js';
@@ -166,6 +168,7 @@ export class WorkerService {
 
   // Orphan reaper cleanup function (Issue #737)
   private stopOrphanReaper: (() => void) | null = null;
+  private stopBusinessLoop: (() => void) | null = null;
 
   // Stale session reaper interval (Issue #1168)
   private staleSessionReaperInterval: ReturnType<typeof setInterval> | null = null;
@@ -302,6 +305,7 @@ export class WorkerService {
     this.server.registerRoutes(new SettingsRoutes(this.settingsManager));
     this.server.registerRoutes(new LogsRoutes());
     this.server.registerRoutes(new MemoryRoutes(this.dbManager, 'claude-mem'));
+    this.server.registerRoutes(new BusinessRoutes(this.dbManager));
   }
 
   /**
@@ -495,6 +499,11 @@ export class WorkerService {
         return activeIds;
       });
       logger.info('SYSTEM', 'Started orphan reaper (runs every 30 seconds)');
+
+      // Start autonomous business loop
+      const businessLoop = new BusinessLoop(this.dbManager.getSessionStore().db);
+      this.stopBusinessLoop = businessLoop.start();
+      logger.info('SYSTEM', 'Started autonomous business loop');
 
       // Reap stale sessions to unblock orphan process cleanup (Issue #1168)
       this.staleSessionReaperInterval = setInterval(async () => {
@@ -969,6 +978,11 @@ export class WorkerService {
     if (this.stopOrphanReaper) {
       this.stopOrphanReaper();
       this.stopOrphanReaper = null;
+    }
+
+    if (this.stopBusinessLoop) {
+      this.stopBusinessLoop();
+      this.stopBusinessLoop = null;
     }
 
     // Stop stale session reaper (Issue #1168)
