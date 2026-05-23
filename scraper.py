@@ -341,6 +341,11 @@ def run_once(reddit: praw.Reddit, cfg: dict, seen: set, discord_url: Optional[st
 
 
 def main() -> None:
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--once", action="store_true", help="Run one cycle and exit (for CI/cron use)")
+    args = parser.parse_args()
+
     cfg = load_config()
     seen = load_cache()
     discord_url = os.environ.get("DISCORD_WEBHOOK_URL")
@@ -351,6 +356,10 @@ def main() -> None:
     except KeyError as exc:
         print(f"{Fore.RED}Missing environment variable: {exc}")
         sys.exit(1)
+
+    if args.once:
+        run_once(reddit, cfg, seen, discord_url)
+        return
 
     print(f"{Fore.CYAN}Survey scraper started. Poll interval: {interval}s. Press Ctrl+C to stop.\n")
 
