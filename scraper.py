@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Reddit survey scraper — monitors subreddits and optional websites for paid survey opportunities."""
+"""Reddit survey scraper — uses Reddit's public JSON feed, no API keys required."""
 
+import argparse
 import json
 import logging
 import os
@@ -14,7 +15,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-import praw
 import requests
 import yaml
 from colorama import Fore, Style, init as colorama_init
@@ -45,7 +45,7 @@ def load_config(path: str = "config.yaml") -> dict:
         return yaml.safe_load(f)
 
 
-# ── cache ──────────────────────────────────────────────────────────────────────
+# ── cache ─────────────────────────────────────────────────────────────────────
 
 def load_cache() -> set:
     if CACHE_FILE.exists():
@@ -74,7 +74,7 @@ def estimate_payout(title: str) -> Optional[float]:
         if m:
             return float(m.group(1))
     if _HIGH_PHRASES.search(title):
-        return 10.0  # conservative "high value" fallback
+        return 10.0
     return None
 
 
@@ -90,9 +90,7 @@ def matches_keywords(title: str, cfg: dict) -> bool:
     text = title.lower()
     required = cfg.get("required_keywords", ["survey", "study", "paid"])
     blocked = cfg.get("blocked_keywords", ["scam", "expired"])
-    has_required = any(kw in text for kw in required)
-    has_blocked = any(kw in text for kw in blocked)
-    return has_required and not has_blocked
+    return any(kw in text for kw in required) and not any(kw in text for kw in blocked)
 
 
 # ── robots.txt ────────────────────────────────────────────────────────────────
@@ -110,53 +108,54 @@ def can_fetch(url: str, ua: str) -> bool:
         try:
             rp.read()
         except Exception:
-            return True  # assume allowed if robots.txt unreachable
+            return True
         _robots_cache[base] = rp
     return _robots_cache[base].can_fetch(ua, url)
 
 
-# ── reddit scraping ───────────────────────────────────────────────────────────
+# ── reddit scraping (public JSON, no API key) ─────────────────────────────────
 
-def build_reddit(cfg: dict) -> praw.Reddit:
-    return praw.Reddit(
-        client_id=os.environ["REDDIT_CLIENT_ID"],
-        client_secret=os.environ["REDDIT_CLIENT_SECRET"],
-        user_agent=os.environ.get("REDDIT_USER_AGENT", cfg.get("reddit_user_agent", "survey-scraper/1.0")),
-    )
-
-
-def fetch_reddit_posts(reddit: praw.Reddit, cfg: dict, seen: set) -> list[dict]:
+def fetch_reddit_posts(cfg: dict, seen: set) -> list[dict]:
     results = []
     lookback_minutes = cfg.get("lookback_minutes", 15)
     cutoff = time.time() - lookback_minutes * 60
+    limit = cfg.get("reddit_post_limit", 50)
+    ua = random.choice(USER_AGENTS)
 
     for sub_name in cfg.get("subreddits", []):
+        url = f"https://www.reddit.com/r/{sub_name}/new.json?limit={limit}"
         try:
-            sub = reddit.subreddit(sub_name)
-            for post in sub.new(limit=cfg.get("reddit_post_limit", 50)):
-                if post.created_utc < cutoff:
-                    continue
-                if post.id in seen:
-                    continue
-                if not matches_keywords(post.title, cfg):
-                    continue
-
-                payout = estimate_payout(post.title)
-                s = score_post(post.score, payout)
-                results.append({
-                    "id": post.id,
-                    "source": f"r/{sub_name}",
-                    "title": post.title,
-                    "url": post.url,
-                    "permalink": f"https://reddit.com{post.permalink}",
-                    "upvotes": post.score,
-                    "comments": post.num_comments,
-                    "payout": payout,
-                    "score": s,
-                })
-                seen.add(post.id)
+            time.sleep(random.uniform(1, 3))
+            resp = requests.get(url, headers={"User-Agent": ua}, timeout=15)
+            resp.raise_for_status()
+            posts = resp.json()["data"]["children"]
         except Exception as exc:
-            logging.error("Reddit fetch error for r/%s: %s", sub_name, exc)
+            logging.error("Reddit JSON fetch error for r/%s: %s", sub_name, exc)
+            continue
+
+        for item in posts:
+            post = item["data"]
+            if post["created_utc"] < cutoff:
+                continue
+            if post["id"] in seen:
+                continue
+            if not matches_keywords(post["title"], cfg):
+                continue
+
+            payout = estimate_payout(post["title"])
+            s = score_post(post["score"], payout)
+            results.append({
+                "id": post["id"],
+                "source": f"r/{sub_name}",
+                "title": post["title"],
+                "url": post.get("url", ""),
+                "permalink": f"https://reddit.com{post['permalink']}",
+                "upvotes": post["score"],
+                "comments": post["num_comments"],
+                "payout": payout,
+                "score": s,
+            })
+            seen.add(post["id"])
 
     return results
 
@@ -186,8 +185,6 @@ def fetch_website_posts(cfg: dict, seen: set) -> list[dict]:
             logging.error("HTTP fetch error for %s: %s", url, exc)
             continue
 
-        # Very lightweight heuristic: look for lines/anchors with keywords
-        # (avoids heavy HTML parsing dependency)
         from html.parser import HTMLParser
 
         class LinkExtractor(HTMLParser):
@@ -242,20 +239,14 @@ def fetch_website_posts(cfg: dict, seen: set) -> list[dict]:
     return results
 
 
-# ── output & notification ─────────────────────────────────────────────────────
-
-def color_for_score(score: float, threshold: float) -> str:
-    if score >= threshold:
-        return Fore.GREEN
-    return Fore.YELLOW
-
+# ── output & notifications ────────────────────────────────────────────────────
 
 def print_post(post: dict, threshold: float) -> None:
-    color = color_for_score(post["score"], threshold)
-    label = "HIGH VALUE" if post["score"] >= threshold else "medium"
+    color = Fore.GREEN if post["score"] >= threshold else Fore.YELLOW
+    label = "HIGH VALUE" if post["score"] >= threshold else "MEDIUM"
     payout_str = f"${post['payout']:.2f}" if post["payout"] is not None else "unknown"
     print(
-        f"{color}[{label.upper()}] {post['title']}\n"
+        f"{color}[{label}] {post['title']}\n"
         f"  Source : {post['source']}\n"
         f"  Link   : {post['permalink']}\n"
         f"  Payout : {payout_str}  |  Upvotes: {post['upvotes']}  |  Score: {post['score']:.1f}\n"
@@ -292,36 +283,27 @@ def send_discord(post: dict, webhook_url: str) -> None:
 def send_desktop_notification(post: dict) -> None:
     payout_str = f"${post['payout']:.2f}" if post["payout"] is not None else "unknown"
     message = f"{post['source']} — Payout: {payout_str}\n{post['permalink']}"
-    # Try plyer first, fall back to notify-send on Linux
     try:
         from plyer import notification  # type: ignore
-        notification.notify(
-            title=f"Survey: {post['title'][:60]}",
-            message=message,
-            timeout=10,
-        )
+        notification.notify(title=f"Survey: {post['title'][:60]}", message=message, timeout=10)
         return
     except Exception:
         pass
-
     if sys.platform.startswith("linux"):
         try:
             import subprocess
-            subprocess.run(
-                ["notify-send", f"Survey: {post['title'][:60]}", message],
-                check=False,
-            )
+            subprocess.run(["notify-send", f"Survey: {post['title'][:60]}", message], check=False)
         except Exception:
             pass
 
 
-# ── main loop ─────────────────────────────────────────────────────────────────
+# ── main ──────────────────────────────────────────────────────────────────────
 
-def run_once(reddit: praw.Reddit, cfg: dict, seen: set, discord_url: Optional[str]) -> None:
+def run_once(cfg: dict, seen: set, discord_url: Optional[str]) -> None:
     threshold = cfg.get("score_threshold", 20)
     desktop_notify = cfg.get("desktop_notifications", False)
 
-    posts = fetch_reddit_posts(reddit, cfg, seen)
+    posts = fetch_reddit_posts(cfg, seen)
     posts += fetch_website_posts(cfg, seen)
 
     if not posts:
@@ -341,9 +323,8 @@ def run_once(reddit: praw.Reddit, cfg: dict, seen: set, discord_url: Optional[st
 
 
 def main() -> None:
-    import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--once", action="store_true", help="Run one cycle and exit (for CI/cron use)")
+    parser.add_argument("--once", action="store_true", help="Run one cycle and exit (for CI/cron)")
     args = parser.parse_args()
 
     cfg = load_config()
@@ -351,14 +332,8 @@ def main() -> None:
     discord_url = os.environ.get("DISCORD_WEBHOOK_URL")
     interval = cfg.get("poll_interval_seconds", 300)
 
-    try:
-        reddit = build_reddit(cfg)
-    except KeyError as exc:
-        print(f"{Fore.RED}Missing environment variable: {exc}")
-        sys.exit(1)
-
     if args.once:
-        run_once(reddit, cfg, seen, discord_url)
+        run_once(cfg, seen, discord_url)
         return
 
     print(f"{Fore.CYAN}Survey scraper started. Poll interval: {interval}s. Press Ctrl+C to stop.\n")
@@ -372,7 +347,7 @@ def main() -> None:
 
     while True:
         try:
-            run_once(reddit, cfg, seen, discord_url)
+            run_once(cfg, seen, discord_url)
         except Exception as exc:
             logging.error("Unexpected error in run_once: %s", exc)
             print(f"{Fore.RED}Error (logged): {exc}")
