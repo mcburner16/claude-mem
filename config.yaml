@@ -1,0 +1,52 @@
+# Survey Scraper Configuration
+# All values here can be overridden; edit freely.
+
+# ── Reddit ────────────────────────────────────────────────────────────────────
+subreddits:
+  - beermoney
+  - surveys
+  - paidstudies
+
+# How many minutes back to look for new posts
+lookback_minutes: 15
+
+# Max posts to pull per subreddit per cycle
+reddit_post_limit: 50
+
+# Fallback user-agent (overridden by REDDIT_USER_AGENT env var)
+reddit_user_agent: "survey-scraper/1.0 by u/your_username"
+
+# ── Optional websites ─────────────────────────────────────────────────────────
+# These are scraped with a basic link extractor (no browser automation).
+# Comment out any you don't want to hit.
+websites: []
+# websites:
+#   - name: Prolific
+#     url: https://www.prolific.co/studies
+#   - name: CloudResearch
+#     url: https://www.cloudresearch.com/resources/
+
+# ── Keyword filtering ─────────────────────────────────────────────────────────
+required_keywords:
+  - survey
+  - study
+  - paid
+
+blocked_keywords:
+  - scam
+  - expired
+
+# ── Scoring ───────────────────────────────────────────────────────────────────
+# score = upvotes * 0.4 + payout_estimate * 10
+# Posts with score >= score_threshold are considered "high value"
+score_threshold: 20
+
+# ── Runtime ───────────────────────────────────────────────────────────────────
+# How long to sleep between polling cycles (seconds)
+poll_interval_seconds: 300
+
+# ── Notifications ─────────────────────────────────────────────────────────────
+# Desktop notifications via plyer (cross-platform) or notify-send (Linux)
+desktop_notifications: false
+# Discord webhook URL can also be set here as a fallback (env var takes priority)
+# discord_webhook_url: "https://discord.com/api/webhooks/..."
