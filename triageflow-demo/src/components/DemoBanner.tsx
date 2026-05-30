@@ -27,7 +27,7 @@ export default function DemoBanner() {
             onClick={() => navigate('/triage/demo-1')}
             className="text-xs px-3 py-1 rounded border border-accent text-accent hover:bg-accent/10 transition-colors"
           >
-            Load Leaking Sink Demo
+            Load Water Leak Demo
           </button>
           <button
             onClick={handleReset}

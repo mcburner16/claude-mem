@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRequests } from '../store';
 import UrgencyBadge from '../components/UrgencyBadge';
@@ -15,6 +16,7 @@ function CopyBox({ label, content }: { label: string; content: string }) {
     });
   }
 
+
   return (
     <div className="bg-surface2 border border-gray-700 rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
@@ -30,8 +32,6 @@ function CopyBox({ label, content }: { label: string; content: string }) {
     </div>
   );
 }
-
-import { useState } from 'react';
 
 export default function TriageResultPage() {
   const { id } = useParams<{ id: string }>();
@@ -109,7 +109,7 @@ export default function TriageResultPage() {
               </div>
               <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 text-center">
                 <div className="text-base font-bold text-accent">{t.followUpMessagesAvoided}</div>
-                <div className="text-xs text-textSecondary mt-1">Follow-ups avoided</div>
+                <div className="text-xs text-textSecondary mt-1">Est. follow-ups avoided</div>
               </div>
               <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 text-center">
                 <div className="text-xs font-bold text-accent leading-tight">{t.estimatedResponseTimeImprovement}</div>

@@ -21,7 +21,7 @@ function determineUrgency(input: TriageInput): UrgencyLevel {
     return 'Emergency';
   if (
     input.category === 'HVAC' &&
-    descContains(desc, ['85', 'very hot', 'really hot']) &&
+    descContains(desc, ['85°', '85 degree', '86', '87', '88', '89', '90']) &&
     input.vulnerableOccupants !== 'none'
   )
     return 'Emergency';
