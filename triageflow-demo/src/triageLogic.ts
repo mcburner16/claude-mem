@@ -70,13 +70,8 @@ function determineUrgency(input: TriageInput): UrgencyLevel {
     input.hazardPresent === 'not_sure'
   )
     return 'Needs More Info';
-  if (
-    isGenericDesc &&
-    (input.category === 'General Maintenance' ||
-      input.category === 'Other' ||
-      input.category === 'HVAC' ||
-      input.category === 'Electrical')
-  )
+  const needsInfoCategories: string[] = ['General Maintenance', 'Other', 'HVAC', 'Electrical'];
+  if (isGenericDesc && needsInfoCategories.includes(input.category))
     return 'Needs More Info';
 
   return 'Routine';
@@ -106,9 +101,8 @@ function suggestVendor(category: Category, urgency: UrgencyLevel): string {
 
 function buildTriageResult(input: TriageInput, urgency: UrgencyLevel): TriageResult {
   const vendor = suggestVendor(input.category, urgency);
-  const { residentName, unitNumber, propertyName, description, category } = input;
+  const { category } = input;
   const today = new Date().toISOString().slice(0, 10);
-  const urgencyLabel = urgency;
 
   const aiRecommendation = buildAiRecommendation(input, urgency, vendor);
   const tenantSummary = buildTenantSummary(input, urgency);
@@ -136,11 +130,6 @@ function buildTriageResult(input: TriageInput, urgency: UrgencyLevel): TriageRes
     followUpMessagesAvoided: followUps,
     estimatedResponseTimeImprovement: responseTime,
   };
-
-  function _unused() {
-    return { residentName, unitNumber, propertyName, description, urgencyLabel };
-  }
-  void _unused;
 }
 
 function buildAiRecommendation(input: TriageInput, urgency: UrgencyLevel, vendor: string): string {
@@ -218,7 +207,7 @@ function buildAuditLog(input: TriageInput, urgency: UrgencyLevel, today: string)
   return `${today} | ${urgency} triage | ${input.category} request from ${input.residentName}, Unit ${input.unitNumber}. ${flagStr}Manager review required before dispatch.`;
 }
 
-function buildNextStep(input: TriageInput, urgency: UrgencyLevel, vendor: string): string {
+function buildNextStep(_input: TriageInput, urgency: UrgencyLevel, vendor: string): string {
   if (urgency === 'Emergency') {
     return `Immediate manager review for emergency ${vendor} dispatch. Confirm resident access and safety status.`;
   }
