@@ -8,40 +8,120 @@ export class Unit {
     this.alive = true;
     this.target = null;
     this.attackCooldown = 0;
-    this.state = 'march'; // march | attack
+    this.state = 'march';
 
-    this.circle = scene.add.circle(x, y, def.size, def.color).setDepth(5);
-    this.circle.setStrokeStyle(2, isPlayer ? 0xaaccff : 0xffaaaa);
+    this.gfx = scene.add.graphics().setDepth(5);
+    this.drawCharacter();
 
-    this.hpBar = scene.add.rectangle(x, y - def.size - 6, def.size * 2, 4, 0x00ff00).setDepth(6);
-    this.hpBg = scene.add.rectangle(x, y - def.size - 6, def.size * 2, 4, 0x333333).setDepth(5);
+    const s = def.size;
+    this.hpBg = scene.add.rectangle(x, y - s * 2.5, s * 2.4, 4, 0x333333).setDepth(6);
+    this.hpBar = scene.add.rectangle(x, y - s * 2.5, s * 2.4, 4, 0x00ff00).setDepth(7);
 
     this.x = x;
     this.y = y;
+    this.gfx.setPosition(x, y);
   }
 
-  get pos() { return { x: this.x, y: this.y }; }
+  drawCharacter() {
+    const g = this.gfx;
+    const def = this.def;
+    const isPlayer = this.isPlayer;
+    const s = def.size;
+    const dir = isPlayer ? 1 : -1;
+
+    const teamColor = isPlayer ? 0x2255cc : 0xcc2222;
+    const armorColor = def.color;
+
+    g.clear();
+
+    // --- legs ---
+    g.fillStyle(teamColor, 1);
+    g.fillRect(-s * 0.45, s * 0.15, s * 0.38, s * 0.85);
+    g.fillRect(s * 0.07, s * 0.15, s * 0.38, s * 0.85);
+
+    // --- boots ---
+    g.fillStyle(0x222222, 1);
+    g.fillRect(-s * 0.45, s * 0.85, s * 0.42, s * 0.3);
+    g.fillRect(s * 0.07, s * 0.85, s * 0.42, s * 0.3);
+
+    // --- body / armor ---
+    g.fillStyle(armorColor, 1);
+    if (def.key === 'heavy') {
+      g.fillRect(-s * 0.75, -s * 1.1, s * 1.5, s * 1.25);
+    } else {
+      g.fillRect(-s * 0.55, -s * 1.0, s * 1.1, s * 1.15);
+    }
+
+    // --- body outline ---
+    g.lineStyle(1.5, 0xffffff, 0.25);
+    if (def.key === 'heavy') {
+      g.strokeRect(-s * 0.75, -s * 1.1, s * 1.5, s * 1.25);
+    } else {
+      g.strokeRect(-s * 0.55, -s * 1.0, s * 1.1, s * 1.15);
+    }
+
+    // --- neck ---
+    g.fillStyle(0xffcc99, 1);
+    g.fillRect(-s * 0.15, -s * 1.3, s * 0.3, s * 0.25);
+
+    // --- head ---
+    const headR = def.key === 'heavy' ? s * 0.75 : s * 0.62;
+    g.fillStyle(0xffcc99, 1);
+    g.fillCircle(0, -s * 1.8, headR);
+
+    // --- helmet ---
+    g.fillStyle(teamColor, 1);
+    g.fillRect(-headR * 1.05, -s * 1.8 - headR * 0.9, headR * 2.1, headR * 1.0);
+    g.fillCircle(0, -s * 1.8 - headR * 0.1, headR * 1.05);
+
+    // --- visor / eyes ---
+    g.fillStyle(0x88ccff, 0.7);
+    g.fillRect(dir * headR * 0.05, -s * 1.8 - headR * 0.25, dir * headR * 0.85, headR * 0.35);
+
+    // --- weapon ---
+    g.fillStyle(0x444444, 1);
+    if (def.key === 'sniper') {
+      // long rifle
+      g.fillRect(dir * s * 0.5, -s * 0.75, dir * s * 2.4, 3);
+      g.fillRect(dir * s * 0.5, -s * 0.9, dir * s * 0.6, s * 0.18);
+    } else if (def.key === 'heavy') {
+      // wide cannon
+      g.fillRect(dir * s * 0.7, -s * 0.7, dir * s * 1.2, 6);
+      g.fillRect(dir * s * 0.5, -s * 0.85, dir * s * 0.5, s * 0.3);
+    } else if (def.key === 'scout') {
+      // small pistol
+      g.fillRect(dir * s * 0.5, -s * 0.65, dir * s * 0.9, 3);
+    } else {
+      // assault rifle
+      g.fillRect(dir * s * 0.5, -s * 0.72, dir * s * 1.5, 4);
+      g.fillRect(dir * s * 0.5, -s * 0.88, dir * s * 0.5, s * 0.2);
+    }
+
+    // team stripe on chest
+    g.fillStyle(isPlayer ? 0x88ccff : 0xff8888, 0.7);
+    g.fillRect(-s * 0.18, -s * 0.85, s * 0.36, s * 0.22);
+  }
 
   moveTo(x, y) {
     this.x = x;
     this.y = y;
-    this.circle.setPosition(x, y);
-    this.hpBg.setPosition(x, y - this.def.size - 6);
-    this.hpBar.setPosition(x, y - this.def.size - 6);
+    this.gfx.setPosition(x, y);
+    this.hpBg.setPosition(x, y - this.def.size * 2.5);
+    this.hpBar.setPosition(x, y - this.def.size * 2.5);
   }
 
   takeDamage(amount) {
     if (!this.alive) return;
     this.hp = Math.max(0, this.hp - amount);
     const pct = this.hp / this.maxHp;
-    this.hpBar.width = this.def.size * 2 * pct;
+    this.hpBar.width = this.def.size * 2.4 * pct;
     this.hpBar.setFillStyle(pct > 0.5 ? 0x00ff00 : pct > 0.25 ? 0xffaa00 : 0xff2200);
     if (this.hp <= 0) this.destroy();
   }
 
   destroy() {
     this.alive = false;
-    this.circle.destroy();
+    this.gfx.destroy();
     this.hpBar.destroy();
     this.hpBg.destroy();
   }
@@ -54,10 +134,8 @@ export class Unit {
 
   update(delta, enemies, enemyBase) {
     if (!this.alive) return;
-
     this.attackCooldown = Math.max(0, this.attackCooldown - delta);
 
-    // find nearest living enemy
     let nearest = null;
     let nearestDist = Infinity;
     for (const e of enemies) {
@@ -69,16 +147,13 @@ export class Unit {
     const rangeWithBase = this.def.attackRange + 30;
 
     if (nearest && nearestDist <= this.def.attackRange) {
-      // attack unit
       this.state = 'attack';
-      this.target = nearest;
       if (this.attackCooldown <= 0) {
         nearest.takeDamage(this.def.damage);
         this.attackCooldown = this.def.attackRate;
         this.flashAttack();
       }
     } else if (!nearest && enemyBase && this.distanceTo({ x: enemyBase.x, y: enemyBase.y }) <= rangeWithBase) {
-      // attack base
       this.state = 'attack';
       if (this.attackCooldown <= 0) {
         enemyBase.takeDamage(this.def.damage);
@@ -86,7 +161,6 @@ export class Unit {
         this.flashAttack();
       }
     } else {
-      // march toward enemy base
       this.state = 'march';
       const dir = this.isPlayer ? 1 : -1;
       const speed = this.def.speed * (delta / 1000);
@@ -96,8 +170,8 @@ export class Unit {
 
   flashAttack() {
     this.scene.tweens.add({
-      targets: this.circle,
-      scaleX: 1.4, scaleY: 1.4,
+      targets: this.gfx,
+      scaleX: 1.3, scaleY: 1.3,
       duration: 80,
       yoyo: true,
     });
