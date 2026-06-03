@@ -1,3 +1,12 @@
 {
-  "mcpServers": {}
+  "mcpServers": {
+    "hunter-io": {
+      "type": "stdio",
+      "command": "sh",
+      "args": [
+        "-c",
+        "npx -y mcp-remote https://mcp.hunter.io/sse --header X-API-KEY:$HUNTER_API_KEY"
+      ]
+    }
+  }
 }
