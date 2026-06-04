@@ -11,6 +11,11 @@ export class Unit {
     this.state = 'march';
 
     this.gfx = scene.add.graphics().setDepth(5);
+
+    // Ground shadow
+    const shadowColor = isPlayer ? 0x1133aa : 0xaa1100;
+    this.shadow = scene.add.ellipse(x, y + def.size * 0.9, def.size * 2.6, def.size * 0.75, shadowColor, 0.24).setDepth(4);
+
     this.drawCharacter();
 
     const s = def.size;
@@ -106,6 +111,7 @@ export class Unit {
     this.x = x;
     this.y = y;
     this.gfx.setPosition(x, y);
+    this.shadow.setPosition(x, y + this.def.size * 0.9);
     this.hpBg.setPosition(x, y - this.def.size * 2.5);
     this.hpBar.setPosition(x, y - this.def.size * 2.5);
   }
@@ -122,6 +128,7 @@ export class Unit {
   destroy() {
     this.alive = false;
     this.gfx.destroy();
+    this.shadow.destroy();
     this.hpBar.destroy();
     this.hpBg.destroy();
   }
