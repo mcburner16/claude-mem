@@ -62,10 +62,13 @@ export class UIScene extends Phaser.Scene {
 
     // === RESULT OVERLAY ===
     this.resultOverlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000).setAlpha(0).setDepth(20);
-    this.resultText = this.add.text(W / 2, H / 2 - 30, '', {
+    this.resultText = this.add.text(W / 2, H / 2 - 38, '', {
       fontSize: '52px', fill: '#ffffff', fontFamily: 'monospace', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(21).setAlpha(0);
-    this.restartText = this.add.text(W / 2, H / 2 + 40, 'Tap to play again', {
+    this.roundText = this.add.text(W / 2, H / 2 + 22, '', {
+      fontSize: '13px', fill: '#aaccff', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(21).setAlpha(0);
+    this.restartText = this.add.text(W / 2, H / 2 + 50, 'Tap to play again', {
       fontSize: '18px', fill: '#aaaaaa', fontFamily: 'monospace',
     }).setOrigin(0.5).setDepth(21).setAlpha(0);
 
@@ -166,11 +169,15 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
-  showResult(result) {
+  showResult(result, streak = 0, round = 1) {
     this.gameOver = true;
     const color = result === 'VICTORY' ? '#44ff88' : '#ff4444';
     this.resultText.setText(result).setFill(color);
+    let sub = `Round ${round}`;
+    if (streak > 1) sub += `   ★ ${streak} Win Streak`;
+    else if (result === 'VICTORY') sub += '   First win!';
+    this.roundText.setText(sub);
     this.tweens.add({ targets: this.resultOverlay, alpha: 0.78, duration: 400 });
-    this.tweens.add({ targets: [this.resultText, this.restartText], alpha: 1, duration: 600, delay: 200 });
+    this.tweens.add({ targets: [this.resultText, this.roundText, this.restartText], alpha: 1, duration: 600, delay: 200 });
   }
 }

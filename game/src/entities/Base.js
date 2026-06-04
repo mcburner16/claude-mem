@@ -107,7 +107,7 @@ export class Base {
     const pct = this.hp / this.maxHp;
     this.hpBar.width = 72 * pct;
     this.hpBar.setFillStyle(pct > 0.5 ? 0x00ff44 : pct > 0.25 ? 0xffaa00 : 0xff2200);
-    // Camera shake — stronger when health is critical
+    if (this.scene.showDamageNumber) this.scene.showDamageNumber(this.x, this.y - 55, amount, this.isPlayer);
     const intensity = pct < 0.3 ? 0.016 : 0.007;
     this.scene.cameras.main.shake(140, intensity);
     if (this.hp <= 0) {

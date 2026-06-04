@@ -51,7 +51,21 @@ export const UNIT_DEFS = {
     size: 14,
     description: 'Long range, fragile',
   },
+  commander: {
+    key: 'commander',
+    label: 'Commander',
+    cost: 6,
+    hp: 350,
+    damage: 32,
+    speed: 52,
+    attackRange: 62,
+    attackRate: 1400,
+    color: 0xddaa00,
+    size: 20,
+    description: 'AoE — strikes all nearby foes',
+    aoe: true,
+  },
 };
 
-export const PLAYER_DECK = ['soldier', 'heavy', 'scout', 'sniper'];
-export const AI_DECK = ['soldier', 'heavy', 'scout', 'sniper'];
+export const PLAYER_DECK = ['soldier', 'heavy', 'scout', 'sniper', 'commander'];
+export const AI_DECK = ['soldier', 'heavy', 'scout', 'sniper', 'commander'];

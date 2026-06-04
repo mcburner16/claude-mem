@@ -48,6 +48,10 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch('UIScene', { gameScene: this });
 
     this.gameOver = false;
+    this.roundNum = (this.registry.get('roundNum') || 0) + 1;
+    this.registry.set('roundNum', this.roundNum);
+
+    this.createAmbientParticles();
   }
 
   drawEnvironment() {
@@ -212,6 +216,36 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  createAmbientParticles() {
+    this.ambParts = [];
+    for (let i = 0; i < 20; i++) {
+      this.ambParts.push({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.4, vy: -0.5 - Math.random() * 0.7,
+        alpha: 0.12 + Math.random() * 0.3,
+        size: 0.7 + Math.random() * 1.3,
+        color: Math.random() > 0.55 ? 0xff7700 : Math.random() > 0.5 ? 0xffbb00 : 0x5577ff,
+      });
+    }
+    this.ambGfx = this.add.graphics().setDepth(1.4);
+  }
+
+  updateAmbientParticles(delta) {
+    const dt = delta / 16;
+    this.ambGfx.clear();
+    for (const p of this.ambParts) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx += (Math.random() - 0.5) * 0.04;
+      p.vx = Math.max(-0.65, Math.min(0.65, p.vx));
+      if (p.y < -8) { p.y = H + 8; p.x = Math.random() * W; }
+      if (p.x < -8) p.x = W + 8;
+      if (p.x > W + 8) p.x = -8;
+      this.ambGfx.fillStyle(p.color, p.alpha);
+      this.ambGfx.fillCircle(p.x, p.y, p.size);
+    }
+  }
+
   showDeathEffect(x, y, teamColor) {
     for (let i = 0; i < 7; i++) {
       const angle = (i / 7) * Math.PI * 2 + Math.random() * 0.4;
@@ -228,6 +262,57 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: flash, alpha: 0, scaleX: 2.4, scaleY: 2.4, duration: 190, onComplete: () => flash.destroy() });
   }
 
+  showDamageNumber(x, y, amount, targetIsPlayer) {
+    const fill = targetIsPlayer ? '#ff7744' : '#ffffff';
+    const xOff = Phaser.Math.Between(-13, 13);
+    const txt = this.add.text(x + xOff, y - 14, `-${amount}`, {
+      fontSize: amount >= 30 ? '15px' : '12px',
+      fill,
+      fontFamily: 'monospace',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(30);
+    this.tweens.add({
+      targets: txt, y: y - 52, alpha: 0, duration: 820,
+      ease: 'Power2Out', onComplete: () => txt.destroy(),
+    });
+  }
+
+  showAoeEffect(x, y, radius, isPlayer) {
+    const color = isPlayer ? 0x4488ff : 0xff4422;
+    const g = this.add.graphics().setDepth(16);
+    g.lineStyle(2.5, color, 0.85);
+    g.strokeCircle(x, y, radius);
+    g.fillStyle(color, 0.1);
+    g.fillCircle(x, y, radius);
+    this.tweens.add({
+      targets: g, scaleX: 1.7, scaleY: 1.7, alpha: 0,
+      duration: 380, ease: 'Power2Out', onComplete: () => g.destroy(),
+    });
+  }
+
+  showCommanderSpawn(x, y, isPlayer) {
+    const color = isPlayer ? 0xffdd00 : 0xff8844;
+    const ring = this.add.ellipse(x, y + 20, 70, 34, color, 0.55).setDepth(4);
+    this.tweens.add({
+      targets: ring, scaleX: 6, scaleY: 5, alpha: 0, duration: 680,
+      ease: 'Power2Out', onComplete: () => ring.destroy(),
+    });
+    const txt = this.add.text(x, y - 80, isPlayer ? '★ COMMANDER' : '⚔ COMMANDER', {
+      fontSize: '13px', fill: isPlayer ? '#ffdd00' : '#ff9944',
+      fontFamily: 'monospace', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(25).setAlpha(0);
+    this.tweens.add({
+      targets: txt, alpha: 1, duration: 170,
+      onComplete: () => this.tweens.add({
+        targets: txt, alpha: 0, y: y - 116, duration: 740,
+        delay: 560, onComplete: () => txt.destroy(),
+      }),
+    });
+  }
+
   deployUnit(key, isPlayer) {
     const def = UNIT_DEFS[key];
     const spawnX = isPlayer ? PLAYER_BASE_X + 50 : ENEMY_BASE_X - 50;
@@ -238,6 +323,7 @@ export class GameScene extends Phaser.Scene {
     else this.enemyUnits.push(unit);
 
     this.showSpawnEffect(spawnX, spawnY, isPlayer);
+    if (key === 'commander') this.showCommanderSpawn(spawnX, spawnY, isPlayer);
   }
 
   tryPlayerDeploy(key) {
@@ -251,13 +337,17 @@ export class GameScene extends Phaser.Scene {
 
   onBaseDestroyed(isPlayerBase) {
     this.gameOver = true;
-    this.scene.get('UIScene').showResult(isPlayerBase ? 'DEFEAT' : 'VICTORY');
+    let streak = parseInt(localStorage.getItem('winStreak') || '0');
+    streak = isPlayerBase ? 0 : streak + 1;
+    localStorage.setItem('winStreak', String(streak));
+    this.scene.get('UIScene').showResult(isPlayerBase ? 'DEFEAT' : 'VICTORY', streak, this.roundNum);
   }
 
   update(time, delta) {
     if (this.gameOver) return;
 
     this.updateFires(delta);
+    this.updateAmbientParticles(delta);
 
     this.playerEnergy = Math.min(MAX_ENERGY, this.playerEnergy + ENERGY_RATE * (delta / 1000));
     this.enemyEnergy = Math.min(MAX_ENERGY, this.enemyEnergy + ENERGY_RATE * (delta / 1000));

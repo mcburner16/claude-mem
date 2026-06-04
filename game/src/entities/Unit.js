@@ -53,6 +53,66 @@ export class Unit {
 
     g.clear();
 
+    if (def.key === 'commander') {
+      // Cape (behind everything)
+      const capeCol = isPlayer ? 0x0d1a88 : 0x881010;
+      g.fillStyle(capeCol, 1);
+      g.fillTriangle(0, -s * 0.9, -s * 1.15, s * 1.15, s * 1.15, s * 1.15);
+      g.fillStyle(isPlayer ? 0x1a2ecc : 0xcc1a1a, 0.4);
+      g.fillTriangle(0, -s * 0.75, -s * 0.5, s * 0.65, s * 0.5, s * 0.65);
+      // Legs
+      g.fillStyle(0x1a1a2a, 1);
+      g.fillRect(-s * 0.42, s * 0.2, s * 0.36, s * 0.78);
+      g.fillRect(s * 0.06, s * 0.2, s * 0.36, s * 0.78);
+      // Boots
+      g.fillStyle(0x111111, 1);
+      g.fillRect(-s * 0.45, s * 0.85, s * 0.43, s * 0.3);
+      g.fillRect(s * 0.04, s * 0.85, s * 0.43, s * 0.3);
+      // Body (gold armor)
+      g.fillStyle(0xcc9900, 1);
+      g.fillRect(-s * 0.82, -s * 1.15, s * 1.64, s * 1.38);
+      g.fillStyle(0xffcc22, 0.4);
+      g.fillRect(-s * 0.74, -s * 1.08, s * 1.48, s * 0.55);
+      g.lineStyle(1.5, 0xffffff, 0.22);
+      g.strokeRect(-s * 0.82, -s * 1.15, s * 1.64, s * 1.38);
+      // Shoulder pads
+      g.fillStyle(0xffdd00, 1);
+      g.fillRect(-s * 1.2, -s * 1.15, s * 0.46, s * 0.46);
+      g.fillRect(s * 0.74, -s * 1.15, s * 0.46, s * 0.46);
+      g.lineStyle(1, 0xffffff, 0.28);
+      g.strokeRect(-s * 1.2, -s * 1.15, s * 0.46, s * 0.46);
+      g.strokeRect(s * 0.74, -s * 1.15, s * 0.46, s * 0.46);
+      // Neck
+      g.fillStyle(0xffcc99, 1);
+      g.fillRect(-s * 0.14, -s * 1.3, s * 0.28, s * 0.2);
+      // Head
+      g.fillStyle(0xffcc99, 1);
+      g.fillCircle(0, -s * 1.8, s * 0.72);
+      // Crown base
+      g.fillStyle(0xffdd00, 1);
+      g.fillRect(-s * 0.72, -s * 1.8 - s * 0.72, s * 1.44, s * 0.26);
+      // Crown spikes (5)
+      for (let ci = 0; ci < 5; ci++) {
+        const cx = -s * 0.6 + ci * s * 0.3;
+        g.fillTriangle(cx, -s * 1.8 - s * 0.72, cx + s * 0.15, -s * 1.8 - s * 0.72 - s * 0.4, cx + s * 0.3, -s * 1.8 - s * 0.72);
+      }
+      // Crown jewel
+      g.fillStyle(isPlayer ? 0x44aaff : 0xff4433, 1);
+      g.fillCircle(0, -s * 1.8 - s * 0.72 - s * 0.02, s * 0.13);
+      // Staff
+      g.fillStyle(0x997700, 1);
+      g.fillRect(dir * s * 0.9, -s * 2.05, dir * s * 0.16, s * 3.08);
+      // Staff orb
+      g.fillStyle(isPlayer ? 0x3366ff : 0xff3311, 0.92);
+      g.fillCircle(dir * (s * 0.98), -s * 2.05, s * 0.38);
+      g.fillStyle(0xffffff, 0.55);
+      g.fillCircle(dir * (s * 0.98) - s * 0.12, -s * 2.05 - s * 0.1, s * 0.12);
+      // Chest medal
+      g.fillStyle(isPlayer ? 0x88ccff : 0xff8888, 0.9);
+      g.fillCircle(0, -s * 0.7, s * 0.19);
+      return;
+    }
+
     // --- legs ---
     g.fillStyle(teamColor, 1);
     g.fillRect(-s * 0.45, s * 0.15, s * 0.38, s * 0.85);
@@ -134,6 +194,7 @@ export class Unit {
     const pct = this.hp / this.maxHp;
     this.hpBar.width = this.def.size * 2.4 * pct;
     this.hpBar.setFillStyle(pct > 0.5 ? 0x00ff00 : pct > 0.25 ? 0xffaa00 : 0xff2200);
+    if (this.scene.showDamageNumber) this.scene.showDamageNumber(this.x, this.y, amount, this.isPlayer);
     if (this.hp <= 0) this.destroy();
   }
 
@@ -171,12 +232,21 @@ export class Unit {
     if (nearest && nearestDist <= this.def.attackRange) {
       this.state = 'attack';
       if (this.attackCooldown <= 0) {
-        nearest.takeDamage(this.def.damage);
+        if (this.def.aoe) {
+          for (const e of enemies) {
+            if (!e.alive) continue;
+            if (this.distanceTo(e) <= this.def.attackRange) {
+              e.takeDamage(this.def.damage);
+              if (this.scene.showProjectile) this.scene.showProjectile(this.x, this.y, e.x, e.y, this.isPlayer);
+            }
+          }
+          if (this.scene.showAoeEffect) this.scene.showAoeEffect(this.x, this.y, this.def.attackRange, this.isPlayer);
+        } else {
+          nearest.takeDamage(this.def.damage);
+          if (this.scene.showProjectile) this.scene.showProjectile(this.x, this.y, nearest.x, nearest.y, this.isPlayer);
+        }
         this.attackCooldown = this.def.attackRate;
         this.flashAttack();
-        if (this.scene.showProjectile) {
-          this.scene.showProjectile(this.x, this.y, nearest.x, nearest.y, this.isPlayer);
-        }
       }
     } else if (!nearest && enemyBase && this.distanceTo({ x: enemyBase.x, y: enemyBase.y }) <= rangeWithBase) {
       this.state = 'attack';
