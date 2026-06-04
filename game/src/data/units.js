@@ -9,7 +9,7 @@ export const UNIT_DEFS = {
     attackRange: 40,
     attackRate: 1000,
     color: 0x4488ff,
-    size: 14,
+    size: 16,
     description: 'Balanced ground unit',
   },
   heavy: {
@@ -22,7 +22,7 @@ export const UNIT_DEFS = {
     attackRange: 45,
     attackRate: 1500,
     color: 0xff8800,
-    size: 20,
+    size: 23,
     description: 'Tanky, slow, hits hard',
   },
   scout: {
@@ -35,7 +35,7 @@ export const UNIT_DEFS = {
     attackRange: 35,
     attackRate: 700,
     color: 0x44ff88,
-    size: 10,
+    size: 12,
     description: 'Fast and cheap',
   },
   sniper: {
@@ -48,7 +48,7 @@ export const UNIT_DEFS = {
     attackRange: 120,
     attackRate: 2000,
     color: 0xff44cc,
-    size: 12,
+    size: 14,
     description: 'Long range, fragile',
   },
 };
