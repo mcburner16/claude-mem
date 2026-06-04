@@ -26,13 +26,18 @@ export class Unit {
     this.y = y;
     this._setDepth();
     this.gfx.setPosition(x, y);
+    this.shadow.setPosition(x, y + def.size * 0.9 * this._scale);
+    const _barY = y - def.size * 2.5 * this._scale;
+    this.hpBg.setPosition(x, _barY);
+    this.hpBar.setPosition(x, _barY);
   }
 
   _setDepth() {
-    // Y-based painter's algorithm: units lower on screen (higher Y) render in front
     const d = 5 + this.y * 0.018;
-    this.gfx.setDepth(d);
-    this.shadow.setDepth(d - 0.5);
+    // Y-scale: units near back of lane (top) appear smaller — pseudo-3D perspective
+    this._scale = 0.82 + (this.y / 500) * 0.36;
+    this.gfx.setDepth(d).setScale(this._scale);
+    this.shadow.setDepth(d - 0.5).setScale(this._scale);
     this.hpBg.setDepth(d + 1);
     this.hpBar.setDepth(d + 1.5);
   }
@@ -117,9 +122,10 @@ export class Unit {
     this.y = y;
     this._setDepth();
     this.gfx.setPosition(x, y);
-    this.shadow.setPosition(x, y + this.def.size * 0.9);
-    this.hpBg.setPosition(x, y - this.def.size * 2.5);
-    this.hpBar.setPosition(x, y - this.def.size * 2.5);
+    this.shadow.setPosition(x, y + this.def.size * 0.9 * this._scale);
+    const barY = y - this.def.size * 2.5 * this._scale;
+    this.hpBg.setPosition(x, barY);
+    this.hpBar.setPosition(x, barY);
   }
 
   takeDamage(amount) {

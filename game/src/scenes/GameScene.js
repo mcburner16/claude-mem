@@ -15,6 +15,11 @@ const LANE_SPREAD = 68; // half-height of spawn zone
 export class GameScene extends Phaser.Scene {
   constructor() { super('GameScene'); }
 
+  preload() {
+    this.load.image('floor_stone', 'assets/floor_stone_pattern_depth.png');
+    this.load.image('wall_stone', 'assets/wall_brick_stone_center_depth.png');
+  }
+
   create() {
     this.W = W;
     this.H = H;
@@ -88,47 +93,48 @@ export class GameScene extends Phaser.Scene {
     g.fillStyle(0x0822cc, 0.07); g.fillRect(0, 0, W * 0.5, H);
     g.fillStyle(0xcc1a06, 0.07); g.fillRect(W * 0.5, 0, W * 0.5, H);
 
-    // === GROUND PLANE (wider than before) ===
+    // === GROUND PLANE ===
     const gH = 155;
     const gT = LANE_Y - gH / 2;
 
-    g.fillStyle(0x111a0b, 1);
-    g.fillRect(0, gT, W, gH);
+    // Real stone tile texture, tinted dark blue-steel
+    this.add.tileSprite(W / 2, LANE_Y, W, gH, 'floor_stone')
+      .setDepth(0.15).setTint(0x1c2d40);
 
-    // Depth stripes
-    const stripes = [0x131c0d, 0x162010, 0x192312, 0x1c2714, 0x1f2b16];
-    for (let i = 0; i < 5; i++) {
-      g.fillStyle(stripes[i], 1);
-      g.fillRect(0, gT + i * (gH / 5), W, gH / 5 + 1);
-    }
+    // Ground overlays drawn above the texture
+    const g2 = this.add.graphics().setDepth(0.25);
 
-    // Receding grid lines (converge toward back / top)
-    g.lineStyle(1, 0x2a4420, 0.35);
-    for (let x = 80; x < W; x += 80) g.lineBetween(x, gT, x, gT + gH);
-    g.lineStyle(1, 0x2a4420, 0.2);
-    g.lineBetween(0, gT + gH * 0.25, W, gT + gH * 0.25);
-    g.lineBetween(0, gT + gH * 0.5,  W, gT + gH * 0.5);
-    g.lineBetween(0, gT + gH * 0.75, W, gT + gH * 0.75);
+    // Depth gradient: dark at back/top, transparent at front/bottom
+    g2.fillGradientStyle(0x020508, 0x020508, 0x020508, 0x020508, 0.72, 0.72, 0.0, 0.0);
+    g2.fillRect(0, gT, W, gH * 0.6);
 
-    // Fog at back of lane (depth illusion)
-    g.fillStyle(0x05050d, 0.32);
-    g.fillRect(0, gT, W, 28);
+    // Fog at back of lane
+    g2.fillStyle(0x05050d, 0.55);
+    g2.fillRect(0, gT, W, 28);
+
+    // Receding grid lines
+    g2.lineStyle(1, 0x5577bb, 0.14);
+    for (let x = 80; x < W; x += 80) g2.lineBetween(x, gT, x, gT + gH);
+    g2.lineStyle(1, 0x5577bb, 0.08);
+    g2.lineBetween(0, gT + gH * 0.25, W, gT + gH * 0.25);
+    g2.lineBetween(0, gT + gH * 0.5,  W, gT + gH * 0.5);
+    g2.lineBetween(0, gT + gH * 0.75, W, gT + gH * 0.75);
 
     // Center glowing divider
-    g.lineStyle(3, 0x6677ee, 0.14); g.lineBetween(W / 2, gT, W / 2, gT + gH);
-    g.lineStyle(1, 0x6677ee, 0.07);
-    g.lineBetween(W/2-3, gT, W/2-3, gT+gH);
-    g.lineBetween(W/2+3, gT, W/2+3, gT+gH);
+    g2.lineStyle(3, 0x6677ee, 0.22); g2.lineBetween(W / 2, gT, W / 2, gT + gH);
+    g2.lineStyle(1, 0x6677ee, 0.09);
+    g2.lineBetween(W/2-3, gT, W/2-3, gT+gH);
+    g2.lineBetween(W/2+3, gT, W/2+3, gT+gH);
 
     // Team ground glow
-    g.fillStyle(0x0a28ee, 0.1); g.fillRect(0, gT, 115, gH);
-    g.fillStyle(0xee1a08, 0.1); g.fillRect(W-115, gT, 115, gH);
+    g2.fillStyle(0x0a28ee, 0.15); g2.fillRect(0, gT, 115, gH);
+    g2.fillStyle(0xee1a08, 0.15); g2.fillRect(W-115, gT, 115, gH);
 
     // Crates
-    this.drawCrates(g, 28,   LANE_Y + 22, 0x8a6820, 0x6a5018);
-    this.drawCrates(g, 78,   LANE_Y + 32, 0x9a7828, 0x7a6020);
-    this.drawCrates(g, W-28, LANE_Y + 22, 0x8a2820, 0x6a1e18);
-    this.drawCrates(g, W-78, LANE_Y + 32, 0x9a3428, 0x7a2820);
+    this.drawCrates(g2, 28,   LANE_Y + 22, 0x8a6820, 0x6a5018);
+    this.drawCrates(g2, 78,   LANE_Y + 32, 0x9a7828, 0x7a6020);
+    this.drawCrates(g2, W-28, LANE_Y + 22, 0x8a2820, 0x6a1e18);
+    this.drawCrates(g2, W-78, LANE_Y + 32, 0x9a3428, 0x7a2820);
   }
 
   drawCrates(g, cx, cy, light, dark) {

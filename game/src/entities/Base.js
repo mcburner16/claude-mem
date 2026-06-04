@@ -79,6 +79,12 @@ export class Base {
     g.fillRect(x - 16, y - 42, 6, 6);
     g.fillRect(x + 10, y - 42, 6, 6);
 
+    // Stone wall texture overlay on the tower body
+    scene.add.tileSprite(x, y - 8, 60, 116, 'wall_stone')
+      .setDepth(3.1)
+      .setAlpha(0.28)
+      .setTint(isPlayer ? 0x2244cc : 0xcc2222);
+
     // Destroy overlay (shown on death)
     this.destroyOverlay = scene.add.rectangle(x, y - 8, 72, 124, 0x000000)
       .setAlpha(0).setDepth(4);
