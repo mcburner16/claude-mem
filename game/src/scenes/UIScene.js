@@ -26,12 +26,14 @@ export class UIScene extends Phaser.Scene {
       fontSize: '16px', fill: '#4488ff', fontFamily: 'monospace',
     }).setOrigin(0.5).setDepth(11);
 
-    // Bar track
-    this.add.rectangle(W / 2 + 10, H - 162, 260, 14, 0x0a1030).setDepth(10).setStrokeStyle(1, 0x1a2a55);
-
-    // Filled bar
-    this.energyBar = this.add.rectangle(W / 2 - 120, H - 162, 0, 10, 0x2266cc)
-      .setOrigin(0, 0.5).setDepth(11);
+    // 10-pip segmented energy bar (Clash Royale style)
+    this.energySegs = [];
+    for (let i = 0; i < 10; i++) {
+      this.energySegs.push(
+        this.add.rectangle(W / 2 - 112.5 + i * 25, H - 162, 23, 13, 0x0a1030)
+          .setDepth(11).setStrokeStyle(1, 0x1a2a55)
+      );
+    }
 
     // Numeric readout
     this.energyNum = this.add.text(W / 2 + 148, H - 162, '10.0', {
@@ -52,12 +54,38 @@ export class UIScene extends Phaser.Scene {
 
     // Energy events
     gs.events.on('energyUpdate', (current, max) => {
-      this.energyBar.width = 240 * (current / max);
-      // Pulse color at low energy
-      const col = current < 2 ? 0x882222 : current < 5 ? 0x225588 : 0x2266cc;
-      this.energyBar.setFillStyle(col);
+      const pct = current / max;
+      for (let i = 0; i < 10; i++) {
+        const lit = pct >= (i + 1) / 10;
+        const col = current < 2 ? 0xcc2222 : current < 5 ? 0x2255aa : 0x2266ff;
+        this.energySegs[i].setFillStyle(lit ? col : 0x0a1030).setAlpha(lit ? 1 : 0.5);
+        this.energySegs[i].setStrokeStyle(1, lit ? 0x4488cc : 0x1a2a55);
+      }
       this.energyNum.setText(current.toFixed(1));
       this.updateCardStates(current);
+    });
+
+    // Kill counters — top corners
+    this.playerKills = 0;
+    this.enemyKills = 0;
+    this.playerKillTxt = this.add.text(16, 13, '⚔ 0', {
+      fontSize: '13px', fill: '#5599ff', fontFamily: 'monospace', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 2,
+    }).setDepth(15);
+    this.enemyKillTxt = this.add.text(W - 16, 13, '0 ⚔', {
+      fontSize: '13px', fill: '#ff5544', fontFamily: 'monospace', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 2,
+    }).setOrigin(1, 0).setDepth(15);
+    gs.events.on('unitDestroyed', (isPlayerUnit) => {
+      if (isPlayerUnit) { this.enemyKills++; this.enemyKillTxt.setText(`${this.enemyKills} ⚔`); }
+      else              { this.playerKills++; this.playerKillTxt.setText(`⚔ ${this.playerKills}`); }
+    });
+
+    // Low-HP red flash when player base is critical
+    this.lowHpFlash = this.add.rectangle(W / 2, H / 2, W, H, 0xff0000).setAlpha(0).setDepth(19);
+    gs.events.on('playerLowHp', () => {
+      if (this.gameOver) return;
+      this.tweens.add({ targets: this.lowHpFlash, alpha: 0.09, duration: 110, yoyo: true, ease: 'Power2' });
     });
 
     // === RESULT OVERLAY ===

@@ -26,6 +26,17 @@ export class GameScene extends Phaser.Scene {
 
     this.drawEnvironment();
 
+    // Screen vignette — darkens edges, depth 2.5 sits above ground/embers but below units/bases
+    const vig = this.add.graphics().setDepth(2.5);
+    vig.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.72, 0, 0.72, 0);
+    vig.fillRect(0, 0, 90, H);
+    vig.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0.72, 0, 0.72);
+    vig.fillRect(W - 90, 0, 90, H);
+    vig.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.55, 0.55, 0, 0);
+    vig.fillRect(0, 0, W, 72);
+    vig.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.38, 0.38);
+    vig.fillRect(0, H - 54, W, 54);
+
     this.playerBase = new Base(this, PLAYER_BASE_X, LANE_Y, true);
     this.enemyBase = new Base(this, ENEMY_BASE_X, LANE_Y, false);
 

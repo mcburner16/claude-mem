@@ -53,6 +53,12 @@ export class Unit {
 
     g.clear();
 
+    // Team-colour glow halo (simulated bloom — drawn before everything)
+    g.fillStyle(teamColor, 0.09);
+    g.fillCircle(0, -s * 0.8, s * 3.4);
+    g.fillStyle(teamColor, 0.04);
+    g.fillCircle(0, -s * 0.8, s * 5.2);
+
     if (def.key === 'commander') {
       // Cape (behind everything)
       const capeCol = isPlayer ? 0x0d1a88 : 0x881010;
@@ -203,6 +209,7 @@ export class Unit {
     if (this.scene.showDeathEffect) {
       this.scene.showDeathEffect(this.x, this.y, this.isPlayer ? 0x2255cc : 0xcc2222);
     }
+    this.scene.events.emit('unitDestroyed', this.isPlayer);
     this.gfx.destroy();
     this.shadow.destroy();
     this.hpBar.destroy();

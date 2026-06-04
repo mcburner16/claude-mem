@@ -108,6 +108,7 @@ export class Base {
     this.hpBar.width = 72 * pct;
     this.hpBar.setFillStyle(pct > 0.5 ? 0x00ff44 : pct > 0.25 ? 0xffaa00 : 0xff2200);
     if (this.scene.showDamageNumber) this.scene.showDamageNumber(this.x, this.y - 55, amount, this.isPlayer);
+    if (this.isPlayer && pct < 0.3) this.scene.events.emit('playerLowHp');
     const intensity = pct < 0.3 ? 0.016 : 0.007;
     this.scene.cameras.main.shake(140, intensity);
     if (this.hp <= 0) {
