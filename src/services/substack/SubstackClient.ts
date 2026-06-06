@@ -24,6 +24,18 @@ export interface SubstackPublishResult {
   post_date?: string;
 }
 
+import { readFileSync, existsSync } from 'fs';
+import { extname, basename } from 'path';
+
+const MIME_MAP: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+};
+
 export class SubstackClient {
   private baseUrl: string;
   private cookieHeader: string;
@@ -42,6 +54,42 @@ export class SubstackClient {
       'Cookie': this.cookieHeader,
       'User-Agent': 'Mozilla/5.0 (compatible; claude-mem/1.0)',
     };
+  }
+
+  /**
+   * Upload a local image file to Substack's CDN.
+   * Returns the hosted image URL.
+   */
+  async uploadImage(filePath: string): Promise<string> {
+    if (!existsSync(filePath)) {
+      throw new Error(`Image file not found: ${filePath}`);
+    }
+
+    const ext = extname(filePath).toLowerCase();
+    const mimeType = MIME_MAP[ext] ?? 'application/octet-stream';
+    const fileBuffer = readFileSync(filePath);
+    const blob = new Blob([fileBuffer], { type: mimeType });
+
+    const formData = new FormData();
+    formData.append('image', blob, basename(filePath));
+
+    const res = await fetch(`${this.baseUrl}/api/v1/image`, {
+      method: 'POST',
+      // No Content-Type header — fetch sets multipart/form-data with boundary automatically
+      headers: { 'Cookie': this.cookieHeader },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Substack image upload failed (${res.status}): ${text}`);
+    }
+
+    const data = await res.json() as { url?: string };
+    if (!data.url) {
+      throw new Error('Substack image upload returned no URL');
+    }
+    return data.url;
   }
 
   async verifyCredentials(): Promise<{ ok: boolean; error?: string }> {

@@ -82,6 +82,36 @@ export async function checkCredentials(): Promise<{
   };
 }
 
+/**
+ * Extract all image src values from markdown, upload local files to Substack,
+ * and return a map of original src → resolved CDN URL.
+ */
+async function resolveImages(
+  markdown: string,
+  client: SubstackClient,
+): Promise<Record<string, string>> {
+  const imageMap: Record<string, string> = {};
+  const IMAGE_RE = /!\[[^\]]*\]\(([^)]+)\)/g;
+  let m: RegExpExecArray | null;
+
+  while ((m = IMAGE_RE.exec(markdown)) !== null) {
+    const src = m[1];
+    if (imageMap[src] !== undefined) continue;
+
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      imageMap[src] = src; // external URL — use as-is
+    } else {
+      try {
+        imageMap[src] = await client.uploadImage(src);
+      } catch {
+        imageMap[src] = src; // keep original on failure; Substack editor can handle broken refs
+      }
+    }
+  }
+
+  return imageMap;
+}
+
 export async function postArticle(opts: PostArticleOptions): Promise<PostArticleResult> {
   const creds = loadCredentials();
   if (!creds) {
@@ -100,8 +130,11 @@ export async function postArticle(opts: PostArticleOptions): Promise<PostArticle
     markdown = readFileSync(opts.content, 'utf-8');
   }
 
-  const bodyDoc = markdownToTiptap(markdown);
   const client = new SubstackClient(creds.publicationUrl, creds.sessionCookie);
+
+  // Upload local images and resolve all image URLs before converting
+  const imageMap = await resolveImages(markdown, client);
+  const bodyDoc = markdownToTiptap(markdown, imageMap);
 
   const draft = await client.createDraft(
     opts.title,

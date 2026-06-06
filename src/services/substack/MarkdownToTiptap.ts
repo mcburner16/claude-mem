@@ -31,7 +31,14 @@ type TiptapNode =
   | { type: 'blockquote'; content: TiptapNode[] }
   | { type: 'codeBlock'; attrs?: { language: string | null }; content: TiptapNode[] }
   | { type: 'horizontalRule' }
+  | { type: 'image'; attrs: { src: string; alt: string; title: string | null } }
   | TiptapTextNode;
+
+// Matches a line that is exclusively a markdown image: ![alt](src)
+const BLOCK_IMAGE_RE = /^!\[([^\]]*)\]\(([^)]+)\)\s*$/;
+
+// Matches inline images within text (for splitting paragraphs)
+const INLINE_IMAGE_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
 
 // Matches inline formatting tokens in order of specificity
 const INLINE_RE =
@@ -83,7 +90,43 @@ function parseInline(text: string): TiptapTextNode[] {
   return nodes.length > 0 ? nodes : [{ type: 'text', text }];
 }
 
-export function markdownToTiptap(markdown: string): TiptapNode {
+/**
+ * Build an image node, resolving the src through imageMap if provided.
+ */
+function imageNode(alt: string, src: string, imageMap?: Record<string, string>): TiptapNode {
+  const resolved = imageMap?.[src] ?? src;
+  return { type: 'image', attrs: { src: resolved, alt, title: null } };
+}
+
+/**
+ * Split a text line that contains inline images into a mix of paragraph
+ * content and block image nodes. Returns an array of TiptapNodes.
+ */
+function splitLineOnImages(line: string, imageMap?: Record<string, string>): TiptapNode[] {
+  const result: TiptapNode[] = [];
+  let lastIdx = 0;
+  let m: RegExpExecArray | null;
+
+  INLINE_IMAGE_RE.lastIndex = 0;
+
+  while ((m = INLINE_IMAGE_RE.exec(line)) !== null) {
+    const before = line.slice(lastIdx, m.index);
+    if (before.trim()) {
+      result.push({ type: 'paragraph', content: parseInline(before) });
+    }
+    result.push(imageNode(m[1], m[2], imageMap));
+    lastIdx = m.index + m[0].length;
+  }
+
+  const after = line.slice(lastIdx);
+  if (after.trim()) {
+    result.push({ type: 'paragraph', content: parseInline(after) });
+  }
+
+  return result;
+}
+
+export function markdownToTiptap(markdown: string, imageMap?: Record<string, string>): TiptapNode {
   const lines = markdown.split('\n');
   const content: TiptapNode[] = [];
   let i = 0;
@@ -112,6 +155,14 @@ export function markdownToTiptap(markdown: string): TiptapNode {
         attrs: { language: lang },
         content: [{ type: 'text', text: codeLines.join('\n') }],
       });
+      continue;
+    }
+
+    // ── Standalone image ────────────────────────────────────────────────────
+    const imgMatch = line.match(BLOCK_IMAGE_RE);
+    if (imgMatch) {
+      content.push(imageNode(imgMatch[1], imgMatch[2], imageMap));
+      i++;
       continue;
     }
 
@@ -153,7 +204,7 @@ export function markdownToTiptap(markdown: string): TiptapNode {
         quoteLines.push(lines[i].replace(/^> ?/, ''));
         i++;
       }
-      const quoteContent = markdownToTiptap(quoteLines.join('\n'));
+      const quoteContent = markdownToTiptap(quoteLines.join('\n'), imageMap);
       content.push({ type: 'blockquote', content: (quoteContent as any).content });
       continue;
     }
@@ -194,6 +245,7 @@ export function markdownToTiptap(markdown: string): TiptapNode {
     while (
       i < lines.length &&
       lines[i].trim() !== '' &&
+      !lines[i].match(BLOCK_IMAGE_RE) &&
       !lines[i].match(/^#{1,6}\s/) &&
       !lines[i].startsWith('```') &&
       !lines[i].startsWith('> ') &&
@@ -205,11 +257,13 @@ export function markdownToTiptap(markdown: string): TiptapNode {
       i++;
     }
     if (paraLines.length > 0) {
-      // Join soft-wrapped lines with a space; double-space = explicit line break
-      content.push({
-        type: 'paragraph',
-        content: parseInline(paraLines.join(' ')),
-      });
+      const joined = paraLines.join(' ');
+      // If the paragraph contains any inline images, split into blocks
+      if (INLINE_IMAGE_RE.test(joined)) {
+        content.push(...splitLineOnImages(joined, imageMap));
+      } else {
+        content.push({ type: 'paragraph', content: parseInline(joined) });
+      }
     }
   }
 
