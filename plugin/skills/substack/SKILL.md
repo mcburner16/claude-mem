@@ -121,9 +121,13 @@ When the user asks to post an article to Substack:
 
 1. **Check credentials** — call `GET /api/substack/status`. If not configured, walk the user through setup above.
 2. **Get the content** — read from a file path they provide, or use the markdown they paste.
-3. **Ask: publish now or save draft?** — default is publish immediately unless user says otherwise.
-4. **Call the API** — use `/api/substack/post` (publish) or `/api/substack/draft`.
-5. **Report the result** — share `postUrl` (published) or `draftUrl` (draft) so the user can view it.
+3. **Show the content to the user** — print the full article title and body in chat so they can review it before anything is sent.
+4. **Always save as draft first** — call `POST /api/substack/draft`. Return the `draftUrl` so the user can inspect it in the Substack editor.
+5. **Ask explicitly for publish confirmation** — say something like: *"Draft saved at [url]. Reply 'publish' to make it live, or let me know if you'd like changes."*
+6. **Only publish after the user explicitly confirms** — if and only if the user replies with a clear affirmative ("yes", "publish", "go ahead", etc.), call `POST /api/substack/post` with `publishImmediately: true`.
+7. **Never auto-publish** — no matter how confident you are in the content, do not skip steps 4–6. A human must explicitly approve every publish action.
+
+> **Rule:** Treat publishing as an irreversible action. Draft is always free; publish is never automatic.
 
 ## Supported Markdown
 
