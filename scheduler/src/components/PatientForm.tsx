@@ -189,22 +189,31 @@ export default function PatientForm({ initial, onSave, onCancel }: PatientFormPr
           <div>
             <label className={labelClass}>Point Value</label>
             <div className="flex items-center gap-2">
-              {[0.5, 1.0, 1.5, 2.0].map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setPointValue(val)}
-                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                    pointValue === val
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {val}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => setPointValue(Math.max(0.1, parseFloat((pointValue - 0.1).toFixed(1))))}
+                className="w-10 h-10 bg-gray-100 rounded-xl text-gray-700 font-bold text-lg flex items-center justify-center hover:bg-gray-200"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                value={pointValue}
+                onChange={(e) => setPointValue(Math.max(0.1, parseFloat(parseFloat(e.target.value).toFixed(1)) || 1.0))}
+                min={0.1}
+                max={9.9}
+                step={0.1}
+                className="flex-1 text-center font-bold text-gray-800 text-lg border border-gray-200 rounded-xl py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              />
+              <button
+                type="button"
+                onClick={() => setPointValue(Math.min(9.9, parseFloat((pointValue + 0.1).toFixed(1))))}
+                className="w-10 h-10 bg-gray-100 rounded-xl text-gray-700 font-bold text-lg flex items-center justify-center hover:bg-gray-200"
+              >
+                +
+              </button>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Routine = 1.0 · Eval/SOC = 2.0</p>
+            <p className="text-xs text-gray-400 mt-1">Routine = 1.0 · Eval/SOC = 2.0 · step 0.1</p>
           </div>
 
           <div>

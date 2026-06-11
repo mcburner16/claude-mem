@@ -203,26 +203,32 @@ export default function ScheduleModal({ patient, onClose }: ScheduleModalProps) 
         {/* Visit Type / Point Value */}
         <div className="mb-5">
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            Visit Type
+            Visit Points
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
-            {([0.5, 1.0, 1.5, 2.0] as const).map((val) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => setPointValue(val)}
-                className={`py-2 rounded-xl text-xs font-semibold transition-colors ${
-                  pointValue === val
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <div>{val} pt{val !== 1 ? 's' : ''}</div>
-                <div className="text-xs opacity-70 mt-0.5">
-                  {val === 0.5 ? 'Short' : val === 1.0 ? 'Routine' : val === 1.5 ? 'Long' : 'Eval/SOC'}
-                </div>
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPointValue(Math.max(0.1, parseFloat((pointValue - 0.1).toFixed(1))))}
+              className="w-10 h-10 bg-gray-100 rounded-xl text-gray-700 font-bold text-lg flex items-center justify-center hover:bg-gray-200"
+            >
+              −
+            </button>
+            <input
+              type="number"
+              value={pointValue}
+              onChange={(e) => setPointValue(Math.max(0.1, parseFloat(parseFloat(e.target.value).toFixed(1)) || 1.0))}
+              min={0.1}
+              max={9.9}
+              step={0.1}
+              className="flex-1 text-center font-bold text-gray-800 text-lg border border-gray-200 rounded-xl py-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            />
+            <button
+              type="button"
+              onClick={() => setPointValue(Math.min(9.9, parseFloat((pointValue + 0.1).toFixed(1))))}
+              className="w-10 h-10 bg-gray-100 rounded-xl text-gray-700 font-bold text-lg flex items-center justify-center hover:bg-gray-200"
+            >
+              +
+            </button>
           </div>
           {patient.pointValue !== pointValue && (
             <p className="text-xs text-blue-500 mt-1.5">
