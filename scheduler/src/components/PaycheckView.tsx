@@ -42,11 +42,14 @@ export default function PaycheckView() {
       )
     : [];
 
-  // Mileage: sum miles across all week days
+  // Mileage: sum miles across all week days (AM before PM, then by specific time)
   const weekMiles = weekDates.reduce((total, date) => {
-    const dayVisits = visits.filter(
-      (v) => selectedWeek && v.weekId === selectedWeek.id && v.date === date && v.status !== 'CANCELLED'
-    );
+    const dayVisits = visits
+      .filter((v) => selectedWeek && v.weekId === selectedWeek.id && v.date === date && v.status !== 'CANCELLED')
+      .sort((a, b) => {
+        if (a.timeBlock !== b.timeBlock) return a.timeBlock === 'AM' ? -1 : 1;
+        return (a.specificTime ?? '').localeCompare(b.specificTime ?? '');
+      });
     const coords = dayVisits
       .map((v) => patients.find((p) => p.id === v.patientId))
       .filter(Boolean)
@@ -57,8 +60,12 @@ export default function PaycheckView() {
   // NVA entries for this week
   const weekNva = nvaEntries.filter((e) => weekDates.includes(e.date));
 
-  // Calculations
-  const visitPayTotal = completedVisits.length * settings.ppvRate;
+  // Calculations — visit pay = pointValue × ppvRate per visit
+  const visitPayTotal = completedVisits.reduce((sum, v) => {
+    const patient = patients.find((p) => p.id === v.patientId);
+    const pts = getVisitPoints(v, patient?.pointValue ?? 1.0);
+    return sum + pts * settings.ppvRate;
+  }, 0);
   const mileageTotal = weekMiles * settings.mileageRate;
   const nvaTotal = weekNva.reduce((sum, e) => sum + e.hours * e.hourlyRate, 0);
   const grandTotal = visitPayTotal + mileageTotal + nvaTotal;
@@ -182,7 +189,7 @@ export default function PaycheckView() {
                         {format(parseISO(v.date), 'EEE MMM d')} · {v.timeBlock} · {pts.toFixed(1)} pt{pts !== 1 ? 's' : ''}
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-gray-700">${settings.ppvRate.toFixed(2)}</span>
+                    <span className="text-sm font-semibold text-gray-700">${(pts * settings.ppvRate).toFixed(2)}</span>
                   </div>
                 );
               })}

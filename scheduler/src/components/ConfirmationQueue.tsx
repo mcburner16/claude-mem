@@ -3,10 +3,11 @@ import { format, parseISO } from 'date-fns';
 import { Visit } from '../types';
 
 export default function ConfirmationQueue() {
-  const { visits, patients, settings, setConfirmationStatus } = useStore();
+  const { visits, patients, settings, setConfirmationStatus, currentWeekId } = useStore();
 
   const pendingVisits = visits.filter(
     (v) =>
+      v.weekId === currentWeekId &&
       v.status !== 'CANCELLED' &&
       (v.confirmationStatus === 'PENDING' || v.confirmationStatus === 'SENT')
   );
