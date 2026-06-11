@@ -13,10 +13,12 @@ interface ActionSheetProps {
 }
 
 function ActionSheet({ visit, patientName, onClose }: ActionSheetProps) {
-  const { updateVisit, cancelVisit, completeVisit, togglePin, weeks, currentWeekId, patients } = useStore();
+  const { updateVisit, cancelVisit, completeVisit, togglePin, weeks, currentWeekId, patients, visits } = useStore();
   const [moveMode, setMoveMode] = useState(false);
+  // Read live visit from store so point edits reflect immediately without closing/reopening
+  const liveVisit = visits.find((v) => v.id === visit.id) ?? visit;
   const patient = patients.find((p) => p.id === visit.patientId);
-  const effectivePoints = visit.pointValueOverride ?? patient?.pointValue ?? 1.0;
+  const effectivePoints = liveVisit.pointValueOverride ?? patient?.pointValue ?? 1.0;
 
   const weekDates = (() => {
     const week = weeks.find((w) => w.id === currentWeekId);
@@ -132,7 +134,7 @@ function ActionSheet({ visit, patientName, onClose }: ActionSheetProps) {
             <div className="bg-gray-50 rounded-xl p-3">
               <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                 Visit Type · <span className="text-blue-600 normal-case">{effectivePoints} pt{effectivePoints !== 1 ? 's' : ''}</span>
-                {visit.pointValueOverride !== undefined && (
+                {liveVisit.pointValueOverride !== undefined && (
                   <button
                     onClick={() => updateVisit(visit.id, { pointValueOverride: undefined })}
                     className="ml-2 text-gray-400 hover:text-gray-600 text-xs normal-case font-normal"
