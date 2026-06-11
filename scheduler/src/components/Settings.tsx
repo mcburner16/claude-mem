@@ -249,6 +249,75 @@ export default function Settings() {
           </div>
         </section>
 
+        {/* Productivity & Pay */}
+        <section>
+          <h2 className="text-sm font-bold text-gray-700 mb-3">Productivity & Pay</h2>
+          <div className="space-y-3">
+            <div>
+              <label className={labelClass}>Weekly Productivity Target (pts)</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={settings.weeklyProductivityTarget}
+                  onChange={(e) => updateSettings({ weeklyProductivityTarget: Number(e.target.value) })}
+                  min={1}
+                  max={100}
+                  step={1}
+                  className="w-24 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+                <span className="text-sm text-gray-500">points per week</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className={labelClass}>PPV Rate</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    value={settings.ppvRate}
+                    onChange={(e) => updateSettings({ ppvRate: Number(e.target.value) })}
+                    min={0}
+                    step={0.5}
+                    className="w-full pl-6 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">per visit</p>
+              </div>
+              <div>
+                <label className={labelClass}>Mileage Rate</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    value={settings.mileageRate}
+                    onChange={(e) => updateSettings({ mileageRate: Number(e.target.value) })}
+                    min={0}
+                    step={0.01}
+                    className="w-full pl-6 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">per mile</p>
+              </div>
+              <div>
+                <label className={labelClass}>NVA Rate</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    value={settings.defaultNvaHourlyRate}
+                    onChange={(e) => updateSettings({ defaultNvaHourlyRate: Number(e.target.value) })}
+                    min={0}
+                    step={0.5}
+                    className="w-full pl-6 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">per hour</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Session Stats */}
         <section>
           <h2 className="text-sm font-bold text-gray-700 mb-1">About</h2>

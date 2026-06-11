@@ -29,6 +29,7 @@ export default function PatientForm({ initial, onSave, onCancel }: PatientFormPr
   const [defaultVisitDuration, setDefaultVisitDuration] = useState(
     initial?.defaultVisitDuration ?? 45
   );
+  const [pointValue, setPointValue] = useState(initial?.pointValue ?? 1.0);
   const [notes, setNotes] = useState(initial?.notes ?? '');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,6 +47,7 @@ export default function PatientForm({ initial, onSave, onCancel }: PatientFormPr
       contactPreference,
       defaultWeeklyVisits,
       defaultVisitDuration,
+      pointValue,
       notes: notes.trim(),
       archived: initial?.archived ?? false,
     };
@@ -182,6 +184,27 @@ export default function PatientForm({ initial, onSave, onCancel }: PatientFormPr
                 className={inputClass}
               />
             </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Point Value</label>
+            <div className="flex items-center gap-2">
+              {[0.5, 1.0, 1.5, 2.0].map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setPointValue(val)}
+                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                    pointValue === val
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Routine = 1.0 · Eval/SOC = 2.0</p>
           </div>
 
           <div>

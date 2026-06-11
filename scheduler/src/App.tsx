@@ -8,12 +8,14 @@ import ConfirmationQueue from './components/ConfirmationQueue';
 import Settings from './components/Settings';
 import NewWeekSetup from './components/NewWeekSetup';
 import SuggestionPanel from './components/SuggestionPanel';
+import PaycheckView from './components/PaycheckView';
 
 const TAB_ICONS: Record<string, string> = {
   week: '📅',
   day: '📋',
   patients: '👥',
   confirmations: '✓',
+  paycheck: '$',
   settings: '⚙',
 };
 
@@ -92,17 +94,20 @@ export default function App() {
         return <NewWeekSetup />;
       case 'suggestions':
         return <SuggestionPanel />;
+      case 'paycheck':
+        return <PaycheckView />;
       default:
         return <WeekView />;
     }
   };
 
-  const mainTabs = ['week', 'day', 'patients', 'confirmations', 'settings'] as const;
+  const mainTabs = ['week', 'day', 'patients', 'confirmations', 'paycheck', 'settings'] as const;
   const tabLabels: Record<string, string> = {
     week: 'Week',
     day: 'Day',
     patients: 'Patients',
     confirmations: 'Queue',
+    paycheck: 'Pay',
     settings: 'Settings',
   };
 

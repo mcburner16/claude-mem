@@ -1,5 +1,5 @@
 import { format, startOfWeek, addDays } from 'date-fns';
-import { Patient, Week, Visit, WeekPatient } from '../types';
+import { Patient, Week, Visit, WeekPatient, NVAEntry } from '../types';
 
 function makeId(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -9,6 +9,7 @@ export function seedData(): {
   patients: Patient[];
   weeks: Week[];
   visits: Visit[];
+  nvaEntries: NVAEntry[];
 } {
   const patients: Patient[] = [
     {
@@ -22,6 +23,7 @@ export function seedData(): {
       contactPreference: 'TEXT',
       defaultWeeklyVisits: 3,
       defaultVisitDuration: 45,
+      pointValue: 1.0,
       notes: 'Gate code: 4421',
       archived: false,
     },
@@ -36,6 +38,7 @@ export function seedData(): {
       contactPreference: 'CALL',
       defaultWeeklyVisits: 2,
       defaultVisitDuration: 60,
+      pointValue: 1.0,
       notes: '',
       archived: false,
     },
@@ -50,6 +53,7 @@ export function seedData(): {
       contactPreference: 'BOTH',
       defaultWeeklyVisits: 3,
       defaultVisitDuration: 45,
+      pointValue: 1.0,
       notes: 'Park in back, ring doorbell twice',
       archived: false,
     },
@@ -64,6 +68,7 @@ export function seedData(): {
       contactPreference: 'TEXT',
       defaultWeeklyVisits: 2,
       defaultVisitDuration: 45,
+      pointValue: 1.0,
       notes: '',
       archived: false,
     },
@@ -78,6 +83,7 @@ export function seedData(): {
       contactPreference: 'BOTH',
       defaultWeeklyVisits: 1,
       defaultVisitDuration: 90,
+      pointValue: 1.5,
       notes: '',
       archived: false,
     },
@@ -92,6 +98,7 @@ export function seedData(): {
       contactPreference: 'CALL',
       defaultWeeklyVisits: 3,
       defaultVisitDuration: 45,
+      pointValue: 1.0,
       notes: '',
       archived: false,
     },
@@ -106,6 +113,7 @@ export function seedData(): {
       contactPreference: 'TEXT',
       defaultWeeklyVisits: 2,
       defaultVisitDuration: 45,
+      pointValue: 1.0,
       notes: '',
       archived: false,
     },
@@ -120,6 +128,7 @@ export function seedData(): {
       contactPreference: 'BOTH',
       defaultWeeklyVisits: 3,
       defaultVisitDuration: 60,
+      pointValue: 1.0,
       notes: 'Dog is friendly, enter through side gate',
       archived: false,
     },
@@ -134,6 +143,7 @@ export function seedData(): {
       contactPreference: 'TEXT',
       defaultWeeklyVisits: 2,
       defaultVisitDuration: 45,
+      pointValue: 1.0,
       notes: '',
       archived: false,
     },
@@ -148,6 +158,7 @@ export function seedData(): {
       contactPreference: 'CALL',
       defaultWeeklyVisits: 3,
       defaultVisitDuration: 45,
+      pointValue: 1.0,
       notes: '',
       archived: false,
     },
@@ -162,6 +173,7 @@ export function seedData(): {
       contactPreference: 'BOTH',
       defaultWeeklyVisits: 1,
       defaultVisitDuration: 75,
+      pointValue: 1.5,
       notes: '',
       archived: false,
     },
@@ -176,6 +188,7 @@ export function seedData(): {
       contactPreference: 'TEXT',
       defaultWeeklyVisits: 2,
       defaultVisitDuration: 45,
+      pointValue: 1.0,
       notes: '',
       archived: false,
     },
@@ -277,5 +290,22 @@ export function seedData(): {
   addVisit('p12', 1, 'PM', 45);
   addVisit('p12', 4, 'PM', 45);
 
-  return { patients, weeks: [week], visits };
+  const nvaEntries: NVAEntry[] = [
+    {
+      id: makeId(),
+      date: dates[0],
+      description: 'Team meeting / care coordination',
+      hours: 1.0,
+      hourlyRate: 25,
+    },
+    {
+      id: makeId(),
+      date: dates[2],
+      description: 'SOC documentation',
+      hours: 1.5,
+      hourlyRate: 25,
+    },
+  ];
+
+  return { patients, weeks: [week], visits, nvaEntries };
 }

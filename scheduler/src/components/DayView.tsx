@@ -231,7 +231,7 @@ export default function DayView() {
               {format(parseISO(date), 'EEEE, MMMM d')}
             </div>
             <div className="mt-1">
-              <StatsBar date={date} />
+              <StatsBar date={date} showPoints />
             </div>
           </div>
           <button

@@ -2,7 +2,7 @@ export type AmPmPreference = 'AM' | 'PM' | 'EITHER';
 export type ContactPreference = 'CALL' | 'TEXT' | 'BOTH';
 export type ConfirmationStatus = 'PENDING' | 'SENT' | 'CONFIRMED';
 export type VisitStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
-export type View = 'week' | 'day' | 'patients' | 'confirmations' | 'settings' | 'newWeek' | 'suggestions';
+export type View = 'week' | 'day' | 'patients' | 'confirmations' | 'settings' | 'newWeek' | 'suggestions' | 'paycheck';
 
 export interface Patient {
   id: string;
@@ -15,6 +15,7 @@ export interface Patient {
   contactPreference: ContactPreference;
   defaultWeeklyVisits: number;
   defaultVisitDuration: number; // minutes
+  pointValue: number; // productivity points per visit (1.0 standard, 2.0 for evals/SOC)
   notes: string;
   archived: boolean;
 }
@@ -41,6 +42,7 @@ export interface Visit {
   status: VisitStatus;
   pinned: boolean;
   confirmationStatus: ConfirmationStatus;
+  pointValueOverride?: number; // override patient default for evals, SOC, etc.
 }
 
 export interface TimeBlock {
@@ -62,6 +64,18 @@ export interface AppSettings {
   clinicianName: string;
   agencyName: string;
   messageTemplate: string;
+  weeklyProductivityTarget: number; // points per week
+  ppvRate: number; // $ per visit
+  mileageRate: number; // $ per mile
+  defaultNvaHourlyRate: number; // $ per hour for NVA entries
+}
+
+export interface NVAEntry {
+  id: string;
+  date: string; // ISO date
+  description: string; // e.g. "Team meeting", "In-service", "SOC documentation"
+  hours: number;
+  hourlyRate: number; // $ per hour
 }
 
 export interface SchedulingSession {

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Patient, Week, Visit, TimeBlock, AppSettings, SchedulingSession, Suggestion, View } from './types';
+import { Patient, Week, Visit, TimeBlock, AppSettings, SchedulingSession, Suggestion, View, NVAEntry } from './types';
 import { generateSuggestions } from './utils/scheduling';
 import { seedData } from './data/seed';
 
@@ -15,6 +15,10 @@ const defaultSettings: AppSettings = {
   agencyName: 'Your Agency',
   messageTemplate:
     'Hi {firstName}, this is {clinicianName} from {agencyName}. I have you scheduled for {day} between {timeWindow}. Does that work for you?',
+  weeklyProductivityTarget: 40,
+  ppvRate: 55,
+  mileageRate: 0.70,
+  defaultNvaHourlyRate: 25,
 };
 
 interface AppState {
@@ -24,6 +28,7 @@ interface AppState {
   timeBlocks: TimeBlock[];
   settings: AppSettings;
   sessions: SchedulingSession[];
+  nvaEntries: NVAEntry[];
   currentWeekId: string | null;
   currentView: View;
   selectedDate: string | null;
@@ -58,6 +63,11 @@ interface AppState {
   // Settings
   updateSettings: (updates: Partial<AppSettings>) => void;
 
+  // NVA entries
+  addNVAEntry: (entry: NVAEntry) => void;
+  updateNVAEntry: (id: string, updates: Partial<NVAEntry>) => void;
+  removeNVAEntry: (id: string) => void;
+
   // Sessions
   startSchedulingSession: () => void;
   endSchedulingSession: () => void;
@@ -79,6 +89,7 @@ export const useStore = create<AppState>()(
       timeBlocks: [],
       settings: defaultSettings,
       sessions: [],
+      nvaEntries: [],
       currentWeekId: null,
       currentView: 'week',
       selectedDate: null,
@@ -178,6 +189,17 @@ export const useStore = create<AppState>()(
       updateSettings: (updates) =>
         set((state) => ({ settings: { ...state.settings, ...updates } })),
 
+      addNVAEntry: (entry) =>
+        set((state) => ({ nvaEntries: [...state.nvaEntries, entry] })),
+
+      updateNVAEntry: (id, updates) =>
+        set((state) => ({
+          nvaEntries: state.nvaEntries.map((e) => (e.id === id ? { ...e, ...updates } : e)),
+        })),
+
+      removeNVAEntry: (id) =>
+        set((state) => ({ nvaEntries: state.nvaEntries.filter((e) => e.id !== id) })),
+
       startSchedulingSession: () => {
         const { schedulingStartTime } = get();
         if (!schedulingStartTime) {
@@ -214,11 +236,12 @@ export const useStore = create<AppState>()(
       seedIfEmpty: () => {
         const { patients } = get();
         if (patients.length === 0) {
-          const { patients: seedPatients, weeks, visits } = seedData();
+          const { patients: seedPatients, weeks, visits, nvaEntries } = seedData();
           set({
             patients: seedPatients,
             weeks,
             visits,
+            nvaEntries,
             currentWeekId: weeks[0]?.id ?? null,
           });
         }

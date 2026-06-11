@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import MasterList from './MasterList';
 import ScheduleModal from './ScheduleModal';
 import StatsBar from './StatsBar';
+import ProductivityWidget from './ProductivityWidget';
 import { Patient } from '../types';
 
 const DAY_ABBREVS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -49,6 +50,9 @@ export default function WeekView() {
           <span className="text-yellow-500 text-xs">View →</span>
         </div>
       )}
+
+      {/* Productivity Widget */}
+      <ProductivityWidget />
 
       {/* Master List */}
       <div className="flex-1 overflow-y-auto">
