@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# allow package-lock.json for reproducible CI builds
+!package-lock.json
