@@ -12,10 +12,12 @@ export default function ProductivityWidget() {
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const weekVisits = visits.filter(
-    (v) => v.weekId === currentWeekId && v.status !== 'CANCELLED'
+    (v) => v.weekId === currentWeekId && v.status === 'COMPLETED'
   );
 
-  const todayVisits = weekVisits.filter((v) => v.date === today);
+  const todayVisits = visits.filter(
+    (v) => v.weekId === currentWeekId && v.date === today && v.status !== 'CANCELLED'
+  );
 
   const weekPoints = weekVisits.reduce((sum, v) => {
     const patient = patients.find((p) => p.id === v.patientId);
@@ -63,7 +65,7 @@ export default function ProductivityWidget() {
         <span>
           Today: <span className="font-semibold text-gray-700">{todayPoints.toFixed(1)} pts</span>
           {' · '}
-          {todayVisits.length} visit{todayVisits.length !== 1 ? 's' : ''}
+          {todayVisits.length} visit{todayVisits.length !== 1 ? 's' : ''} scheduled
         </span>
         {remaining > 0 ? (
           <span className="font-medium text-gray-600">{remaining.toFixed(1)} pts left</span>
