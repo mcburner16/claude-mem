@@ -224,7 +224,8 @@ export function seedData(): {
     timeBlock: 'AM' | 'PM',
     duration: number,
     status: Visit['status'] = 'SCHEDULED',
-    confirmationStatus: Visit['confirmationStatus'] = 'PENDING'
+    confirmationStatus: Visit['confirmationStatus'] = 'PENDING',
+    pinned = false
   ) {
     visits.push({
       id: makeId(),
@@ -234,61 +235,47 @@ export function seedData(): {
       timeBlock,
       estimatedDuration: duration,
       status,
-      pinned: false,
+      pinned,
       confirmationStatus,
     });
   }
 
-  // Margaret Johnson (AM, 3x/week)
-  addVisit('p1', 0, 'AM', 45, 'COMPLETED', 'CONFIRMED');
-  addVisit('p1', 2, 'AM', 45, 'SCHEDULED', 'SENT');
-  addVisit('p1', 4, 'AM', 45);
+  // ── Monday: all done ──────────────────────────────────────
+  addVisit('p1',  0, 'AM', 45, 'COMPLETED', 'CONFIRMED');  // Margaret Johnson
+  addVisit('p4',  0, 'AM', 45, 'COMPLETED', 'CONFIRMED');  // James Brown
+  addVisit('p10', 0, 'AM', 45, 'COMPLETED', 'CONFIRMED');  // William Jackson
+  addVisit('p3',  0, 'PM', 45, 'COMPLETED', 'CONFIRMED');  // Dorothy Williams
+  addVisit('p6',  0, 'PM', 45, 'COMPLETED', 'CONFIRMED');  // Charles Wilson
+  addVisit('p8',  0, 'AM', 60, 'COMPLETED', 'CONFIRMED');  // Thomas Taylor
 
-  // Robert Smith (EITHER, 2x/week)
-  addVisit('p2', 1, 'AM', 60, 'COMPLETED', 'CONFIRMED');
-  addVisit('p2', 3, 'PM', 60);
+  // ── Tuesday: all done ─────────────────────────────────────
+  addVisit('p2',  1, 'AM', 60, 'COMPLETED', 'CONFIRMED');  // Robert Smith
+  addVisit('p7',  1, 'AM', 45, 'COMPLETED', 'CONFIRMED');  // Barbara Moore
+  addVisit('p1',  1, 'AM', 45, 'COMPLETED', 'CONFIRMED');  // Margaret Johnson
+  addVisit('p9',  1, 'PM', 45, 'COMPLETED', 'CONFIRMED');  // Sandra Anderson
+  addVisit('p12', 1, 'PM', 45, 'COMPLETED', 'CONFIRMED');  // Michael Martinez
 
-  // Dorothy Williams (PM, 3x/week)
-  addVisit('p3', 0, 'PM', 45, 'COMPLETED', 'CONFIRMED');
-  addVisit('p3', 2, 'PM', 45, 'SCHEDULED', 'SENT');
-  addVisit('p3', 4, 'PM', 45);
+  // ── Wednesday: all done ───────────────────────────────────
+  addVisit('p5',  2, 'AM', 90, 'COMPLETED', 'CONFIRMED');  // Patricia Davis (1.5 pts)
+  addVisit('p10', 2, 'AM', 45, 'COMPLETED', 'CONFIRMED');  // William Jackson
+  addVisit('p8',  2, 'AM', 60, 'COMPLETED', 'CONFIRMED');  // Thomas Taylor
+  addVisit('p3',  2, 'PM', 45, 'COMPLETED', 'CONFIRMED');  // Dorothy Williams
+  addVisit('p6',  2, 'PM', 45, 'COMPLETED', 'CONFIRMED');  // Charles Wilson
 
-  // James Brown (AM, 2x/week)
-  addVisit('p4', 1, 'AM', 45, 'COMPLETED', 'CONFIRMED');
-  addVisit('p4', 3, 'AM', 45);
+  // ── Thursday (today): confirmed & ready to go ─────────────
+  addVisit('p4',  3, 'AM', 45, 'SCHEDULED', 'CONFIRMED', true);  // James Brown – pinned (requested this slot)
+  addVisit('p7',  3, 'AM', 45, 'SCHEDULED', 'CONFIRMED');         // Barbara Moore
+  addVisit('p2',  3, 'PM', 60, 'SCHEDULED', 'SENT');              // Robert Smith
+  addVisit('p9',  3, 'PM', 45, 'SCHEDULED', 'SENT');              // Sandra Anderson
+  addVisit('p11', 3, 'PM', 75, 'SCHEDULED', 'PENDING');           // Linda Harris (1.5 pts)
 
-  // Patricia Davis (EITHER, 1x/week)
-  addVisit('p5', 2, 'AM', 90);
-
-  // Charles Wilson (PM, 3x/week)
-  addVisit('p6', 0, 'PM', 45, 'COMPLETED', 'CONFIRMED');
-  addVisit('p6', 2, 'PM', 45, 'SCHEDULED', 'SENT');
-  addVisit('p6', 4, 'PM', 45);
-
-  // Barbara Moore (AM, 2x/week)
-  addVisit('p7', 1, 'AM', 45);
-  addVisit('p7', 3, 'AM', 45);
-
-  // Thomas Taylor (EITHER, 3x/week)
-  addVisit('p8', 0, 'AM', 60, 'COMPLETED', 'CONFIRMED');
-  addVisit('p8', 2, 'PM', 60);
-  addVisit('p8', 4, 'AM', 60);
-
-  // Sandra Anderson (PM, 2x/week)
-  addVisit('p9', 1, 'PM', 45);
-  addVisit('p9', 3, 'PM', 45);
-
-  // William Jackson (AM, 3x/week)
-  addVisit('p10', 0, 'AM', 45, 'COMPLETED', 'CONFIRMED');
-  addVisit('p10', 2, 'AM', 45, 'SCHEDULED', 'SENT');
-  addVisit('p10', 4, 'AM', 45);
-
-  // Linda Harris (EITHER, 1x/week)
-  addVisit('p11', 3, 'PM', 75);
-
-  // Michael Martinez (PM, 2x/week)
-  addVisit('p12', 1, 'PM', 45);
-  addVisit('p12', 4, 'PM', 45);
+  // ── Friday: scheduled, confirmations pending ──────────────
+  addVisit('p1',  4, 'AM', 45, 'SCHEDULED', 'PENDING');   // Margaret Johnson
+  addVisit('p10', 4, 'AM', 45, 'SCHEDULED', 'PENDING');   // William Jackson
+  addVisit('p8',  4, 'AM', 60, 'SCHEDULED', 'PENDING');   // Thomas Taylor
+  addVisit('p3',  4, 'PM', 45, 'SCHEDULED', 'PENDING');   // Dorothy Williams
+  addVisit('p6',  4, 'PM', 45, 'SCHEDULED', 'PENDING');   // Charles Wilson
+  addVisit('p12', 4, 'PM', 45, 'SCHEDULED', 'PENDING');   // Michael Martinez
 
   const nvaEntries: NVAEntry[] = [
     {
@@ -300,8 +287,15 @@ export function seedData(): {
     },
     {
       id: makeId(),
+      date: dates[1],
+      description: 'In-service training',
+      hours: 2.0,
+      hourlyRate: 25,
+    },
+    {
+      id: makeId(),
       date: dates[2],
-      description: 'SOC documentation',
+      description: 'SOC documentation — Patricia Davis',
       hours: 1.5,
       hourlyRate: 25,
     },
