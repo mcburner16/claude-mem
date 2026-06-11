@@ -20,6 +20,7 @@ export default function ScheduleModal({ patient, onClose }: ScheduleModalProps) 
     patient.amPmPreference !== 'EITHER' ? patient.amPmPreference : 'AM'
   );
   const [specificTime, setSpecificTime] = useState('');
+  const [pointValue, setPointValue] = useState(patient.pointValue);
 
   if (!currentWeek) return null;
 
@@ -57,6 +58,7 @@ export default function ScheduleModal({ patient, onClose }: ScheduleModalProps) 
       status: 'SCHEDULED' as const,
       pinned: false,
       confirmationStatus: 'PENDING' as const,
+      pointValueOverride: pointValue !== patient.pointValue ? pointValue : undefined,
     };
     addVisit(newVisit);
     onClose();
@@ -197,6 +199,37 @@ export default function ScheduleModal({ patient, onClose }: ScheduleModalProps) 
             />
           </div>
         )}
+
+        {/* Visit Type / Point Value */}
+        <div className="mb-5">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            Visit Type
+          </div>
+          <div className="grid grid-cols-4 gap-1.5">
+            {([0.5, 1.0, 1.5, 2.0] as const).map((val) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setPointValue(val)}
+                className={`py-2 rounded-xl text-xs font-semibold transition-colors ${
+                  pointValue === val
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <div>{val} pt{val !== 1 ? 's' : ''}</div>
+                <div className="text-xs opacity-70 mt-0.5">
+                  {val === 0.5 ? 'Short' : val === 1.0 ? 'Routine' : val === 1.5 ? 'Long' : 'Eval/SOC'}
+                </div>
+              </button>
+            ))}
+          </div>
+          {patient.pointValue !== pointValue && (
+            <p className="text-xs text-blue-500 mt-1.5">
+              Default for {patient.name.split(' ')[0]} is {patient.pointValue} pt{patient.pointValue !== 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
 
         {/* Confirm Button */}
         <button

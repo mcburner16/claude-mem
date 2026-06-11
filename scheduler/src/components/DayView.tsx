@@ -13,8 +13,12 @@ interface ActionSheetProps {
 }
 
 function ActionSheet({ visit, patientName, onClose }: ActionSheetProps) {
-  const { updateVisit, cancelVisit, completeVisit, togglePin, weeks, currentWeekId } = useStore();
+  const { updateVisit, cancelVisit, completeVisit, togglePin, weeks, currentWeekId, patients, visits } = useStore();
   const [moveMode, setMoveMode] = useState(false);
+  // Read live visit from store so point edits reflect immediately without closing/reopening
+  const liveVisit = visits.find((v) => v.id === visit.id) ?? visit;
+  const patient = patients.find((p) => p.id === visit.patientId);
+  const effectivePoints = liveVisit.pointValueOverride ?? patient?.pointValue ?? 1.0;
 
   const weekDates = (() => {
     const week = weeks.find((w) => w.id === currentWeekId);
@@ -126,6 +130,40 @@ function ActionSheet({ visit, patientName, onClose }: ActionSheetProps) {
             >
               🗺 Navigate (Single Stop)
             </button>
+            {/* Point Value Override */}
+            <div className="bg-gray-50 rounded-xl p-3">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                Visit Type · <span className="text-blue-600 normal-case">{effectivePoints} pt{effectivePoints !== 1 ? 's' : ''}</span>
+                {liveVisit.pointValueOverride !== undefined && (
+                  <button
+                    onClick={() => updateVisit(visit.id, { pointValueOverride: undefined })}
+                    className="ml-2 text-gray-400 hover:text-gray-600 text-xs normal-case font-normal"
+                  >
+                    reset to default
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {([0.5, 1.0, 1.5, 2.0] as const).map((val) => (
+                  <button
+                    key={val}
+                    onClick={() => updateVisit(visit.id, {
+                      pointValueOverride: val === patient?.pointValue ? undefined : val,
+                    })}
+                    className={`py-2 rounded-xl text-xs font-semibold transition-colors ${
+                      effectivePoints === val
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    <div>{val}pt</div>
+                    <div className="text-xs opacity-70">
+                      {val === 0.5 ? 'Short' : val === 1.0 ? 'Routine' : val === 1.5 ? 'Long' : 'Eval'}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
             <button
               onClick={() => {
                 cancelVisit(visit.id);
