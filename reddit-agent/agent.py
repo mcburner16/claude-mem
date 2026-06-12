@@ -199,14 +199,16 @@ def minutes_since_last_comment(con: sqlite3.Connection) -> float:
 
 async def login_reddit(page) -> None:
     log.info("Logging in to Reddit...")
-    await page.goto("https://old.reddit.com/login", wait_until="domcontentloaded")
+    await page.goto("https://www.reddit.com/login/", wait_until="networkidle")
     await page.wait_for_timeout(2000)
-    await page.fill("#user_login", REDDIT_USERNAME)
-    await page.fill("#passwd_login", REDDIT_PASSWORD)
-    await page.click("#login-form button[type=submit]")
-    await page.wait_for_timeout(4000)
 
-    if "login" in page.url.lower():
+    await page.wait_for_selector("input[name='username']", timeout=15000)
+    await page.fill("input[name='username']", REDDIT_USERNAME)
+    await page.fill("input[name='password']", REDDIT_PASSWORD)
+    await page.click("button[type='submit']")
+    await page.wait_for_timeout(5000)
+
+    if "/login" in page.url:
         raise RuntimeError(
             "Reddit login failed — check REDDIT_USERNAME and REDDIT_PASSWORD in .env"
         )
