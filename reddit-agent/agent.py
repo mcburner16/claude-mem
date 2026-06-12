@@ -5,6 +5,8 @@ Logs into Reddit like a human using browser automation.
 No Reddit API credentials needed — just username and password.
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import asyncio
