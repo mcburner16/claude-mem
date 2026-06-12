@@ -1,0 +1,74 @@
+name: Reddit Growth Agent
+
+# Runs the Reddit Organic Growth Agent on a schedule, in the cloud.
+# Nothing needs to run on your computer.
+#
+#   • Scheduled run: every 2 hours (cron below).
+#   • Manual run:    tap "Run workflow" in the GitHub mobile app or website
+#                    (the workflow_dispatch trigger).
+#   • Pause/resume:  disable or enable this workflow from the Actions tab
+#                    (GitHub mobile app supports this too).
+#
+# NOTE: GitHub only fires `schedule` triggers from the repository's DEFAULT
+# branch (usually `main`). Scheduled runs begin once this file is merged to the
+# default branch. `workflow_dispatch` (manual run) works from any branch.
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"   # every 2 hours, on the hour
+  workflow_dispatch:          # manual "Run now" button (works from iOS app)
+
+# Prevent overlapping runs.
+concurrency:
+  group: reddit-agent
+  cancel-in-progress: false
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: reddit-agent
+        run: pip install -r requirements.txt
+
+      # Persist the dedup/state database between scheduled runs so the agent
+      # remembers which posts it already replied to and the daily comment count.
+      - name: Restore agent state
+        uses: actions/cache@v4
+        with:
+          path: ~/.reddit-agent
+          key: reddit-agent-state-${{ github.run_id }}
+          restore-keys: |
+            reddit-agent-state-
+
+      - name: Run one scan
+        working-directory: reddit-agent
+        env:
+          RUN_ONCE: "true"
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          STORE_URL: ${{ secrets.STORE_URL }}
+        run: python3 agent.py --once
+
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-log-${{ github.run_id }}
+          path: ~/.reddit-agent/agent.log
+          if-no-files-found: ignore
+          retention-days: 14

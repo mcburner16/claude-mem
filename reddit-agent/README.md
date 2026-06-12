@@ -13,7 +13,57 @@ Monitors relevant subreddits every 2 hours, finds threads where someone is askin
 
 ---
 
+## ⭐ Recommended: run 24/7 in the cloud + control from your iPhone (GitHub Actions)
+
+This is the easiest way to run the agent **without keeping any computer awake**. GitHub runs it for free every 2 hours, and you control the whole thing from the **GitHub mobile app** on iOS — start it, pause it, and read its logs from your phone.
+
+### 1 — Add your credentials as GitHub Secrets
+
+On the GitHub website (or mobile browser), open this repo and go to:
+
+**Settings → Secrets and variables → Actions → New repository secret**
+
+Add each of these (name on the left, your value on the right):
+
+| Secret name | Value |
+|---|---|
+| `REDDIT_CLIENT_ID` | your Reddit app client ID |
+| `REDDIT_CLIENT_SECRET` | your Reddit app client secret |
+| `REDDIT_USERNAME` | your Reddit username |
+| `REDDIT_PASSWORD` | your Reddit password |
+| `REDDIT_USER_AGENT` | `FreelancePromoBot/1.0 by u/yourusername` |
+| `OPENAI_API_KEY` | your OpenAI key (`sk-...`) |
+| `STORE_URL` | `https://digitaldrop-co.madethis.app` |
+
+Secrets are encrypted — they're never visible in logs or to anyone browsing the repo.
+
+### 2 — Merge this branch into `main`
+
+GitHub only runs **scheduled** workflows from the default branch. Once the pull request is merged to `main`, the agent automatically starts running every 2 hours. (The manual "Run now" button works even before merging.)
+
+### 3 — Control it from your iPhone
+
+Install the **GitHub** app from the App Store and open this repo → **Actions** tab → **Reddit Growth Agent**:
+
+- ▶️ **Run workflow** — trigger a scan right now
+- ⏸️ **Disable workflow** (⋯ menu) — pause the agent entirely; **Enable** to resume
+- 📜 **Tap any run** — see the full log of what it scanned and posted
+- 📎 Each run also saves an `agent-log` artifact you can download
+
+That's your full control panel — no terminal, no laptop, all from your phone.
+
+### How it behaves on Actions
+
+- Runs once every 2 hours and exits (set via `RUN_ONCE`/`--once` mode)
+- Posts **at most one comment per run** — the 2-hour cadence spaces comments naturally, well above the 10-minute minimum
+- Remembers which posts it already replied to and the daily count between runs (state is cached)
+- All safety limits (5/day cap, downvote pause) still apply
+
+---
+
 ## Running on iOS (iSH)
+
+> The GitHub Actions method above is recommended — it doesn't require keeping any device awake. Use iSH only if you specifically want the agent running on the phone itself.
 
 **iSH** is a free App Store app that runs Alpine Linux on your iPhone/iPad. It's the most compatible environment for Python agents on iOS.
 

@@ -231,8 +231,12 @@ def minutes_since_last_comment(con: sqlite3.Connection) -> float:
 
 # ── Main scan ─────────────────────────────────────────────────────────────────
 
-def run_scan(reddit, openai_client: OpenAI, con: sqlite3.Connection) -> None:
-    log.info("=== Scan started ===")
+def run_scan(reddit, openai_client: OpenAI, con: sqlite3.Connection,
+             once: bool = False) -> None:
+    """Run one scan. When once=True (e.g. GitHub Actions / cron), post at most
+    one comment and return immediately — no in-run sleeping. The 2-hour cron
+    cadence naturally spaces comments well above the 10-minute minimum."""
+    log.info("=== Scan started%s ===", " (once)" if once else "")
     check_downvotes(reddit, con)
 
     if is_paused(con):
@@ -299,6 +303,12 @@ def run_scan(reddit, openai_client: OpenAI, con: sqlite3.Connection) -> None:
                         log.info("Daily limit hit. Done.")
                         return
 
+                    # In once-mode (cron/Actions) post a single comment per run;
+                    # the schedule itself provides the spacing between comments.
+                    if once:
+                        log.info("Once-mode: posted one comment. Done.")
+                        return
+
                     # Respect the minimum gap before the next comment
                     time.sleep(MIN_MINUTES_BTW_COMMENTS * 60)
 
@@ -329,6 +339,18 @@ def main() -> None:
     )
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
     con = init_db()
+
+    # RUN_ONCE (or --once): do a single scan and exit. Used by GitHub Actions /
+    # cron, where an external scheduler invokes us every 2 hours.
+    run_once = (
+        os.getenv("RUN_ONCE", "").lower() in ("1", "true", "yes")
+        or "--once" in sys.argv
+    )
+
+    if run_once:
+        log.info("Agent started in once-mode. Single scan, then exit.")
+        run_scan(reddit, openai_client, con, once=True)
+        return
 
     log.info("Agent started. Scanning now, then every 2 hours.")
     run_scan(reddit, openai_client, con)
