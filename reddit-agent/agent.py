@@ -253,39 +253,33 @@ async def get_posts_from_sub(page, sub_name: str) -> list[tuple[str, str, str, s
     return posts
 
 
-async def post_comment(page, url: str, text: str) -> None:
-    """Post a comment on a Reddit post (new Reddit UI)."""
-    await page.goto(url, wait_until="domcontentloaded")
-    await page.wait_for_timeout(3000)
+async def post_comment(page, post_id: str, text: str) -> None:
+    """Post via Reddit's web API using the browser session — no UI scraping."""
+    result = await page.evaluate("""
+        async ([thing_id, comment_text]) => {
+            const meResp = await fetch('https://www.reddit.com/api/me.json');
+            const meData = await meResp.json();
+            const modhash = meData.data.modhash;
 
-    # Expand the comment box if needed
-    try:
-        expand = await page.query_selector("[placeholder='Add a comment']")
-        if expand:
-            await expand.click()
-            await page.wait_for_timeout(1000)
-    except Exception:
-        pass
+            const resp = await fetch('https://www.reddit.com/api/comment', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: new URLSearchParams({
+                    api_type: 'json',
+                    text: comment_text,
+                    thing_id: thing_id,
+                    uh: modhash
+                }).toString()
+            });
+            const data = await resp.json();
+            return JSON.stringify(data);
+        }
+    """, [post_id, text])
 
-    # Type into the rich-text / contenteditable comment editor
-    editor = await page.wait_for_selector(
-        ".public-DraftEditor-content, div[contenteditable='true'], "
-        "textarea[placeholder='Add a comment']",
-        timeout=10000,
-    )
-    await editor.click()
-    await page.keyboard.type(text, delay=30)
-    await page.wait_for_timeout(500)
-
-    # Submit
-    submit = await page.wait_for_selector(
-        "button[type='submit']:has-text('Comment'), "
-        "button:has-text('Comment'), "
-        "button:has-text('Save')",
-        timeout=8000,
-    )
-    await submit.click()
-    await page.wait_for_timeout(3000)
+    data = json.loads(result)
+    errors = data.get("json", {}).get("errors", [])
+    if errors:
+        raise RuntimeError(f"Reddit API errors: {errors}")
 
 # ── Main scan ─────────────────────────────────────────────────────────────────
 
@@ -344,7 +338,7 @@ async def run_scan(openai_client: OpenAI, con: sqlite3.Connection,
                             continue
 
                         try:
-                            await post_comment(page, url, reply_text)
+                            await post_comment(page, post_id, reply_text)
                             log_comment(con, post_id, sub_name, reply_text)
                             today += 1
                             log.info("Commented. Today: %d/%d", today, MAX_COMMENTS_PER_DAY)
