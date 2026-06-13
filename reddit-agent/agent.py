@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import sys
+import json
 import asyncio
 import sqlite3
 import logging
@@ -215,66 +216,75 @@ async def login_reddit(page) -> None:
     log.info("Logged in as %s.", REDDIT_USERNAME)
 
 
-async def get_posts_from_sub(page, sub_name: str) -> list[tuple[str, str, str]]:
-    """Return list of (post_id, title, comments_url) from subreddit's /new feed."""
+async def get_posts_from_sub(page, sub_name: str) -> list[tuple[str, str, str, str]]:
+    """Return list of (post_id, title, body, url) using the Reddit JSON API."""
     await page.goto(
-        f"https://old.reddit.com/r/{sub_name}/new/", wait_until="domcontentloaded"
+        f"https://www.reddit.com/r/{sub_name}/new.json?limit={POSTS_PER_SUB}",
+        wait_until="domcontentloaded",
     )
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(1500)
+
+    try:
+        raw = await page.inner_text("pre")
+        data = json.loads(raw)
+    except Exception as exc:
+        log.error("Failed to parse JSON for r/%s: %s", sub_name, exc)
+        return []
 
     posts = []
-    for thing in await page.query_selector_all(".thing.link"):
-        try:
-            post_id  = await thing.get_attribute("data-fullname") or ""
-            author   = await thing.get_attribute("data-author") or ""
-            title_el = await thing.query_selector("a.title")
-            title    = await title_el.inner_text() if title_el else ""
-            url_el   = await thing.query_selector("a.comments")
-            url      = await url_el.get_attribute("href") if url_el else None
-            flair_el = await thing.query_selector(".flair")
-            flair    = (await flair_el.inner_text() if flair_el else "").lower()
+    for child in data.get("data", {}).get("children", []):
+        p = child.get("data", {})
+        post_id = p.get("name", "")
+        title   = p.get("title", "")
+        body    = p.get("selftext", "")
+        author  = p.get("author", "")
+        flair   = (p.get("link_flair_text") or "").lower()
+        url     = f"https://www.reddit.com{p.get('permalink', '')}"
 
-            if not post_id or not title or not url:
-                continue
-            if author == REDDIT_USERNAME:
-                continue
-            if any(f in flair for f in NO_PROMO_FLAIRS):
-                continue
+        if not post_id or not title:
+            continue
+        if author == REDDIT_USERNAME:
+            continue
+        if any(f in flair for f in NO_PROMO_FLAIRS):
+            continue
 
-            posts.append((post_id, title, url))
-        except Exception:
-            pass
+        posts.append((post_id, title, body, url))
 
-    return posts[:POSTS_PER_SUB]
-
-
-async def get_post_body(page, url: str) -> str:
-    try:
-        await page.goto(url, wait_until="domcontentloaded")
-        await page.wait_for_timeout(1500)
-        el = await page.query_selector(".expando .md")
-        return await el.inner_text() if el else ""
-    except Exception:
-        return ""
+    return posts
 
 
 async def post_comment(page, url: str, text: str) -> None:
+    """Post a comment on a Reddit post (new Reddit UI)."""
     await page.goto(url, wait_until="domcontentloaded")
-    await page.wait_for_timeout(2000)
+    await page.wait_for_timeout(3000)
 
-    textarea = await page.query_selector("#commentarea .usertext-edit textarea")
-    if not textarea:
-        raise RuntimeError("Comment textarea not found")
+    # Expand the comment box if needed
+    try:
+        expand = await page.query_selector("[placeholder='Add a comment']")
+        if expand:
+            await expand.click()
+            await page.wait_for_timeout(1000)
+    except Exception:
+        pass
 
-    await textarea.click()
-    await textarea.fill(text)
+    # Type into the rich-text / contenteditable comment editor
+    editor = await page.wait_for_selector(
+        ".public-DraftEditor-content, div[contenteditable='true'], "
+        "textarea[placeholder='Add a comment']",
+        timeout=10000,
+    )
+    await editor.click()
+    await page.keyboard.type(text, delay=30)
     await page.wait_for_timeout(500)
 
-    save_btn = await page.query_selector("#commentarea .usertext-edit .save")
-    if not save_btn:
-        raise RuntimeError("Save button not found")
-
-    await save_btn.click()
+    # Submit
+    submit = await page.wait_for_selector(
+        "button[type='submit']:has-text('Comment'), "
+        "button:has-text('Comment'), "
+        "button:has-text('Save')",
+        timeout=8000,
+    )
+    await submit.click()
     await page.wait_for_timeout(3000)
 
 # ── Main scan ─────────────────────────────────────────────────────────────────
@@ -318,11 +328,10 @@ async def run_scan(openai_client: OpenAI, con: sqlite3.Connection,
                     posts = await get_posts_from_sub(page, sub_name)
                     log.info("r/%s: %d posts to check.", sub_name, len(posts))
 
-                    for post_id, title, url in posts:
+                    for post_id, title, body, url in posts:
                         if already_commented(con, post_id):
                             continue
 
-                        body  = await get_post_body(page, url)
                         score = score_post(title, body)
 
                         if score == 0:
