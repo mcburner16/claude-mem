@@ -201,37 +201,19 @@ def minutes_since_last_comment(con: sqlite3.Connection) -> float:
 async def login_reddit(page) -> None:
     log.info("Logging in to Reddit...")
     await page.goto("https://www.reddit.com/login/", wait_until="domcontentloaded")
-    await page.wait_for_timeout(3000)
+    await page.wait_for_timeout(2000)
 
     await page.wait_for_selector("input[name='username']", timeout=15000)
     await page.fill("input[name='username']", REDDIT_USERNAME)
-    await page.wait_for_timeout(500)
     await page.fill("input[name='password']", REDDIT_PASSWORD)
-    await page.wait_for_timeout(500)
     await page.keyboard.press("Enter")
+    await page.wait_for_timeout(8000)
 
-    # Wait for redirect away from login — up to 15 seconds
-    for _ in range(15):
-        await page.wait_for_timeout(1000)
-        if "/login" not in page.url:
-            break
-
-    # Verify by checking for user session via API
-    try:
-        me = await page.evaluate("""
-            async () => {
-                const r = await fetch('https://www.reddit.com/api/me.json');
-                const d = await r.json();
-                return d.data && d.data.name ? d.data.name : null;
-            }
-        """)
-        if not me:
-            raise RuntimeError("Not logged in")
-        log.info("Logged in as %s.", me)
-    except Exception:
+    if "/login" in page.url:
         raise RuntimeError(
             "Reddit login failed — check REDDIT_USERNAME and REDDIT_PASSWORD in .env"
         )
+    log.info("Logged in as %s.", REDDIT_USERNAME)
 
 
 async def get_posts_from_sub(page, sub_name: str) -> list[tuple[str, str, str, str]]:
