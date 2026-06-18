@@ -97,6 +97,7 @@ import { LogsRoutes } from './worker/http/routes/LogsRoutes.js';
 import { MemoryRoutes } from './worker/http/routes/MemoryRoutes.js';
 import { CorpusRoutes } from './worker/http/routes/CorpusRoutes.js';
 import { BusinessRoutes } from './worker/http/routes/BusinessRoutes.js';
+import { SubstackRoutes } from './worker/http/routes/SubstackRoutes.js';
 import { BusinessLoop } from './business/BusinessLoop.js';
 
 // Knowledge agent services
@@ -306,6 +307,7 @@ export class WorkerService {
     this.server.registerRoutes(new LogsRoutes());
     this.server.registerRoutes(new MemoryRoutes(this.dbManager, 'claude-mem'));
     this.server.registerRoutes(new BusinessRoutes(this.dbManager));
+    this.server.registerRoutes(new SubstackRoutes());
   }
 
   /**
