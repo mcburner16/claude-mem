@@ -6,7 +6,9 @@ Total time: ~45 minutes the first time.
 
 1. Create a project at https://supabase.com (free tier is fine for the pilot).
    Choose a region near Dallas (`us-east-1` or `us-west-1`).
-2. SQL Editor → paste and run `supabase/migrations/0001_init.sql`.
+2. SQL Editor → run each file in `supabase/migrations/` **in order**:
+   `0001_init.sql`, then `0002_rls_hardening_and_quiet_hours.sql`. Both are
+   required (0002 adds tenant-isolation hardening + quiet-hours modes).
 3. Authentication → Providers → Email: **disable "Allow new users to sign up"**
    (accounts are provisioned by you, not self-serve).
 4. Settings → API: copy the **Project URL**, **anon key**, and **service_role key**.
@@ -22,9 +24,14 @@ Total time: ~45 minutes the first time.
    - `NEXT_PUBLIC_APP_URL` = your production URL (e.g. `https://recovery.yourdomain.com`)
    - `CRON_SECRET`, `DEMO_SECRET` = `openssl rand -hex 32` each
    - `DRY_RUN=false`, `SKIP_TWILIO_SIGNATURE_VALIDATION=false`
-3. Deploy. `vercel.json` already schedules the weekly report cron
-   (Mondays 13:00 UTC ≈ 8am Dallas); Vercel automatically sends `CRON_SECRET` as the
-   bearer token — just make sure the env var exists.
+3. Deploy. `vercel.json` schedules two crons — the weekly report (Mondays
+   13:00 UTC ≈ 8am Dallas) and the scheduled-outreach release (every 15 min).
+   Vercel automatically sends `CRON_SECRET` as the bearer token — just make sure
+   the env var exists. **Note on plans**: sub-daily crons require **Vercel Pro**.
+   On the free Hobby plan the 15-minute release cron effectively runs only ~once
+   a day, so companies that pick the "schedule" quiet-hours mode won't get timely
+   releases until you're on Pro. The demo company uses "immediate" mode, so demos
+   and the staging smoke test don't depend on this cron.
 4. **Important**: `NEXT_PUBLIC_APP_URL` must exactly match the public URL Twilio
    calls (scheme + host, no trailing slash) or signature validation will fail.
 
@@ -67,5 +74,5 @@ Supabase keys in your shell env.)
 ## Updating
 
 Push to `main` → Vercel redeploys. Database changes: add a new numbered file in
-`supabase/migrations/` and run it in the SQL Editor. Never edit `0001_init.sql`
+`supabase/migrations/` and run it in the SQL Editor. Never edit a migration
 after it has run in production.

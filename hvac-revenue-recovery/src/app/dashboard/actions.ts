@@ -102,6 +102,7 @@ const settingsSchema = z.object({
   after_hours_forwarding: z.enum(["true", "false"]).optional(),
   quiet_hours_start: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   quiet_hours_end: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  quiet_hours_mode: z.enum(["immediate", "schedule", "notify_only"]).optional(),
   notify_sms_numbers: z.string().max(500).optional(), // comma-separated
   notify_emails: z.string().max(500).optional(),
   initial_outreach: z.string().max(1600).optional(),
@@ -157,6 +158,7 @@ export async function updateSettings(formData: FormData): Promise<{ error?: stri
   }
   if (input.quiet_hours_start) update.quiet_hours_start = input.quiet_hours_start;
   if (input.quiet_hours_end) update.quiet_hours_end = input.quiet_hours_end;
+  if (input.quiet_hours_mode) update.quiet_hours_mode = input.quiet_hours_mode;
 
   if (input.notify_sms_numbers !== undefined) {
     const nums = input.notify_sms_numbers.split(",").map((s) => s.trim()).filter(Boolean);

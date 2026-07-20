@@ -75,3 +75,26 @@ export function isWithinQuietHours(
   // window crosses midnight
   return minutes >= start || minutes < end;
 }
+
+/**
+ * Given a moment inside quiet hours, return the next moment outside them —
+ * i.e. the next local `quietEnd`. Computed by adding the minutes remaining
+ * until quietEnd to `date`, so it stays timezone-correct without a tz library.
+ * If `date` is not actually within quiet hours, returns `date` unchanged.
+ * (DST transitions can shift the result by up to an hour; the release cron
+ * re-checks quiet hours before sending, so a small drift is harmless.)
+ */
+export function nextPermittedTime(
+  date: Date,
+  timeZone: string,
+  quietStart = "21:00",
+  quietEnd = "08:00"
+): Date {
+  if (!isWithinQuietHours(date, timeZone, quietStart, quietEnd)) return date;
+  const { minutes } = localDayAndMinutes(date, timeZone);
+  const end = minutesOfDay(quietEnd);
+  // Minutes from now until the next occurrence of quietEnd (1..1440).
+  let delta = (end - minutes + 1440) % 1440;
+  if (delta === 0) delta = 1440;
+  return new Date(date.getTime() + delta * 60_000);
+}

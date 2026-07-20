@@ -5,7 +5,7 @@ import { notifyOwner, CompanyRow, LeadSummary } from "./notify";
 import { renderTemplate } from "./templates";
 import { DEFAULT_TEMPLATES, CompanyTemplates, ConversationState } from "./conversation/types";
 import { handleInboundMessage, initialConversationState } from "./conversation/state-machine";
-import { isWithinQuietHours } from "./business-hours";
+import { decideOutreach } from "./scheduled-outreach";
 
 /**
  * Core lead lifecycle used by both real Twilio webhooks and demo simulation.
@@ -103,7 +103,14 @@ export type MissedCallResult =
   | { outcome: "duplicate" }
   | { outcome: "opted_out" }
   | { outcome: "lead_exists"; leadId: string }
-  | { outcome: "lead_created"; leadId: string; textSent: boolean; quietHours: boolean };
+  | {
+      outcome: "lead_created";
+      leadId: string;
+      textSent: boolean;
+      quietHours: boolean;
+      scheduledFor: string | null;
+      mode: "immediate" | "schedule" | "notify_only";
+    };
 
 const MISSED_STATUSES = new Set(["no-answer", "busy", "failed", "canceled"]);
 
@@ -177,6 +184,17 @@ export async function processCallOutcome(
     .eq("call_sid", event.callSid)
     .single();
 
+  // Decide whether to text the caller now, schedule it, or never (per the
+  // company's quiet-hours mode). The lead is created and staff notified either
+  // way, so no lead is ever left without a response.
+  const now = new Date();
+  const decision = decideOutreach(company.quiet_hours_mode ?? "schedule", {
+    now,
+    timezone: company.timezone,
+    quietStart: company.quiet_hours_start,
+    quietEnd: company.quiet_hours_end,
+  });
+
   const init = initialConversationState();
   const { data: lead, error: leadErr } = await db
     .from("leads")
@@ -187,25 +205,22 @@ export async function processCallOutcome(
       status: "new",
       conversation_stage: init.stage,
       answers: init.answers,
+      outreach_scheduled_for: decision.kind === "schedule" ? decision.at.toISOString() : null,
     })
     .select("id")
     .single();
   if (leadErr || !lead) throw new Error(`Failed to create lead: ${leadErr?.message}`);
 
-  // Quiet hours: create the lead but hold the outreach text. (MVP: the owner is
-  // notified; a scheduled sender is a post-pilot improvement documented in the roadmap.)
-  const quiet = isWithinQuietHours(
-    new Date(),
-    company.timezone,
-    company.quiet_hours_start,
-    company.quiet_hours_end
-  );
-
   let textSent = false;
-  if (!quiet) {
+  if (decision.kind === "send") {
     const templates = companyTemplates(company);
     const body = renderTemplate(templates.initial_outreach, { company_name: company.name });
     await sendToCaller(db, company, lead.id as string, event.from, body, "initial_outreach");
+    await db
+      .from("leads")
+      .update({ outreach_sent_at: now.toISOString() })
+      .eq("id", lead.id)
+      .eq("company_id", company.id);
     textSent = true;
   }
 
@@ -218,7 +233,14 @@ export async function processCallOutcome(
   };
   await notifyOwner(db, company, summary, "new_lead");
 
-  return { outcome: "lead_created", leadId: lead.id as string, textSent, quietHours: quiet };
+  return {
+    outcome: "lead_created",
+    leadId: lead.id as string,
+    textSent,
+    quietHours: decision.kind !== "send",
+    scheduledFor: decision.kind === "schedule" ? decision.at.toISOString() : null,
+    mode: company.quiet_hours_mode ?? "schedule",
+  };
 }
 
 export type InboundSmsResult =

@@ -15,6 +15,7 @@ interface Company {
   business_hours: Record<string, unknown>;
   quiet_hours_start: string;
   quiet_hours_end: string;
+  quiet_hours_mode: "immediate" | "schedule" | "notify_only";
   templates: Record<string, string>;
   emergency_response_reviewed: boolean;
   notify_sms_numbers: string[];
@@ -209,6 +210,27 @@ export function SettingsForms({ company }: { company: Company }) {
               className={inputCls}
             />
           </div>
+        </div>
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+          <label className={`${labelCls} font-semibold text-amber-900`} htmlFor="quiet_hours_mode">
+            Missed calls during quiet hours
+          </label>
+          <p className="text-xs text-amber-800 mb-2">
+            A lead is always created and you are always notified. This setting only
+            controls the automated text to the caller. <strong>Your business must review
+            its communication and consent policy (TCPA / state quiet-hour rules) before
+            choosing — see the compliance checklist.</strong>
+          </p>
+          <select
+            id="quiet_hours_mode"
+            name="quiet_hours_mode"
+            defaultValue={company.quiet_hours_mode}
+            className={inputCls}
+          >
+            <option value="immediate">Send the recovery text immediately (even during quiet hours)</option>
+            <option value="schedule">Schedule it for the next permitted time (recommended)</option>
+            <option value="notify_only">Don&apos;t text the caller — just create the lead and notify staff</option>
+          </select>
         </div>
       </Section>
 

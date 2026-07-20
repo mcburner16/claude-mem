@@ -94,8 +94,12 @@ callback → completed`, plus `human_takeover`, `opted_out`, `emergency`.
   demo endpoints need the demo session or `DEMO_SECRET`; cron needs `CRON_SECRET`.
 - **Fail-safe TwiML**: any voice-webhook error still returns speech + hangup, never
   dead air on a customer call.
-- **Quiet hours**: initial outreach is suppressed 9pm–8am local (configurable); the
-  lead is still created and the owner still notified.
+- **Quiet hours**: per-company mode governs the caller text during 9pm–8am local
+  (configurable) — `immediate` (send anyway), `schedule` (hold and release at the
+  next permitted time via the release cron, with an atomic claim so it can't send
+  twice), or `notify_only` (never text). The lead is always created and the owner
+  always notified, so no lead is lost. Each business must review its consent policy
+  before choosing.
 - Env vars validated with zod at first use; audit log on lead/settings changes.
 
 ## Revenue reporting honesty

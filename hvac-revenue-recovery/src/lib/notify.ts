@@ -15,6 +15,7 @@ export interface CompanyRow {
   business_hours: Record<string, { open: string; close: string; closed?: boolean }>;
   quiet_hours_start: string;
   quiet_hours_end: string;
+  quiet_hours_mode: "immediate" | "schedule" | "notify_only";
   templates: Record<string, string>;
   notify_sms_numbers: string[];
   notify_emails: string[];

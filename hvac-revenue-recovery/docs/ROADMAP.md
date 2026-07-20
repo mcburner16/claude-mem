@@ -16,8 +16,6 @@
 
 ## Improvements after the first client (validated pain, not speculation)
 
-- Scheduled sender for quiet-hours leads (currently: lead created + owner notified,
-  first text held; add "send at 8am" job)
 - Password reset + invite flow (today: you reset via Supabase dashboard)
 - Owner reply-from-dashboard (manual SMS into the thread, takeover button)
 - Conditional call forwarding onboarding guide per carrier (AT&T/Verizon/T-Mobile

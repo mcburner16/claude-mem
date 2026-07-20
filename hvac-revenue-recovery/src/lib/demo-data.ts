@@ -10,6 +10,7 @@ export const DEMO_COMPANY = {
   slug: DEMO_COMPANY_SLUG,
   is_demo: true,
   timezone: "America/Chicago",
+  quiet_hours_mode: "immediate",
   twilio_number: "+12145550100",
   forward_to_number: "+12145550199",
   notify_sms_numbers: ["+12145550199"],

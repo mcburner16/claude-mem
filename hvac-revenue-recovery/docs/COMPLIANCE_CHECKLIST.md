@@ -11,9 +11,16 @@ Last reviewed: 2026-07. Laws and carrier rules change; re-review quarterly.
       no further automated texts after opt-out (START re-subscribes)
 - [x] HELP returns business identification and opt-out instructions
 - [x] Initial message identifies the business and includes "Reply STOP to opt out"
-- [x] Quiet hours: no first-contact texts 21:00–08:00 recipient-local (configurable;
-      TCPA safe harbor is 8am–9pm *called party's* local time — the app uses the
-      company's timezone as a proxy; fine for local HVAC service areas)
+- [x] Quiet hours: configurable per-company behavior for missed calls during
+      21:00–08:00 (TCPA safe harbor is 8am–9pm *called party's* local time — the app
+      uses the company's timezone as a proxy; fine for local HVAC service areas). Each
+      company chooses one mode (Settings → Business hours), which they **must** review
+      against their consent policy:
+      - **immediate** — texts even during quiet hours (only if the business has a
+        defensible consent basis for after-hours contact)
+      - **schedule** (default) — holds the text and releases it at the next permitted
+        time; no lead is lost and no text is sent during quiet hours
+      - **notify_only** — never auto-texts the caller; staff follow up manually
 - [x] Full message log retained; per-caller outbound rate limit; duplicate-text
       protection
 - [x] Emergency-language safety response with mandatory company review flag
