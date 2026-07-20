@@ -1,0 +1,12 @@
+# parent repo ignores package-lock.json; this app needs it for reproducible deploys
+!package-lock.json
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+.vercel
